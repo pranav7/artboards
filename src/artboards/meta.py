@@ -199,6 +199,11 @@ def group_folders(root):
     return sorted((p for p in entries if not p.name.startswith(".") and os.path.isdir(p)), key=lambda p: p.name.lower())
 
 
+def close_by_hand(meta):
+    meta["active"] = False
+    meta["closed"] = {"reason": "by-hand", "at": now_iso(), "detail": "closed by hand"}
+
+
 def reopen(meta):
     """Open a closed group again. keep stops tidy from closing it on the same evidence."""
     meta["active"] = True

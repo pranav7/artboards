@@ -58,7 +58,8 @@ The agent runs `artboards serve` when the server is not up, and gives you a URL 
 `http://localhost:8899/<group>/1-Checkout.html`. Open `http://localhost:8899/` for the review
 queue: each group with work to review, and the state of each artboard. The server closes a
 group when its pull request merges, when all of its artboards are agreed, or after 7 days
-with no change. Closed groups are on `http://localhost:8899/history`.
+with no change. To close a group yourself, click **Archive** on it. Closed groups are on
+`http://localhost:8899/history`, where **Reopen** puts a group back in the queue.
 
 ## Keep the server on
 

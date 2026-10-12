@@ -3,9 +3,13 @@
 Routes: "/" the review queue, "/history" closed groups, "/_kit/<file>" the lo-fi kit, and
 "/<group>/<file>" files from the data dir (group folders may be symlinks). Anything else is a
 404, and a path that leaves the data dir or the kit dir is refused.
+
+POST "/_api/archive/<key>" and "/_api/reopen/<key>" are the buttons on the two index pages.
+They accept only requests whose Origin is this server, so another site cannot press them.
 """
 import http.server
 import mimetypes
+import os
 import pathlib
 import sys
 import threading
@@ -14,8 +18,10 @@ import traceback
 from urllib.parse import unquote, urlsplit
 
 from . import index, paths, tidy
+from . import meta as m
 
 TIDY_EVERY = 3600
+ACTIONS = {"archive": m.close_by_hand, "reopen": m.reopen}
 mimetypes.add_type("text/javascript", ".js")
 
 
@@ -37,6 +43,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_HEAD(self):
         self.respond(body=False)
+
+    def do_POST(self):
+        parts = [p for p in unquote(urlsplit(self.path).path).split("/") if p]
+        if len(parts) != 3 or parts[0] != "_api" or parts[1] not in ACTIONS:
+            return self.send_error(404)
+        port = self.server.server_address[1]
+        if self.headers.get("Origin") not in (f"http://localhost:{port}", f"http://127.0.0.1:{port}"):
+            return self.send_error(403, "Request from another origin refused")
+        key = parts[2]
+        folder = paths.data_dir() / key
+        if key.startswith(".") or "\\" in key or not os.path.isdir(folder):
+            return self.send_error(404)
+        meta, ok = m.load_meta(folder)
+        if not ok:
+            return self.send_error(409, "meta.json cannot be read")
+        ACTIONS[parts[1]](meta)
+        m.write_meta(folder, meta)
+        self.send_bytes(b'{"ok": true}\n', "application/json; charset=utf-8", body=True)
 
     def respond(self, body):
         path = unquote(urlsplit(self.path).path)

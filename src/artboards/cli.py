@@ -82,8 +82,7 @@ def cmd_serve(args):
 def cmd_archive(args):
     folder = group_dir(args.key)
     meta = m.read_meta(folder)
-    meta["active"] = False
-    meta["closed"] = {"reason": "by-hand", "at": m.now_iso(), "detail": "closed by hand"}
+    m.close_by_hand(meta)
     m.write_meta(folder, meta)
     print(f"closed {args.key}")
 
