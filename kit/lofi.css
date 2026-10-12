@@ -1,0 +1,309 @@
+/* lofi.css - the lo-fi journey board kit.
+   Sections: tokens, page and board shell, canvas, regions and cells,
+   screen components, arrows and labels, journey focus, panel, toolbar. */
+
+/* ---------- Tokens ---------- */
+:root {
+  --bg: #f3f3f1;          /* canvas */
+  --region: #e6e6e3;      /* region panels */
+  --paper: #ffffff;       /* screen fill */
+  --ink: #1c1c1e;         /* outlines, main text, the primary button */
+  --ink-2: #57585d;       /* secondary text */
+  --ink-3: #8c8d92;       /* placeholder and hint text */
+  --line: #dcdcde;        /* thin rules inside screens */
+  --line-strong: #b9babd; /* field and card outlines */
+  --fill: #ececee;        /* photo and thumbnail placeholders */
+  --arrow: #8b8c91;
+  --accent: #2563eb;      /* journey highlight only */
+  --warn: #c0392b;        /* open questions only */
+  --warn-bg: #fdeeec;
+  --warn-line: #efb7b0;
+  --scrim: rgba(0, 0, 0, 0.28);
+  --panel: #fafaf9;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151517;
+    --region: #212124;
+    --paper: #2a2a2e;
+    --ink: #ececee;
+    --ink-2: #b0b1b6;
+    --ink-3: #7f8086;
+    --line: #3d3e43;
+    --line-strong: #5a5b61;
+    --fill: #3a3a3f;
+    --arrow: #85868d;
+    --accent: #6ea3ff;
+    --warn: #ff7b6e;
+    --warn-bg: #3a2020;
+    --warn-line: #7a3a33;
+    --scrim: rgba(0, 0, 0, 0.5);
+    --panel: #1b1b1e;
+  }
+}
+
+/* ---------- Page and board shell ---------- */
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 13px/1.45 var(--font); }
+wf-board { display: grid; grid-template-columns: minmax(0, 1fr) 320px; height: 100vh; position: relative; }
+wf-board.no-panel { grid-template-columns: minmax(0, 1fr); }
+wf-board.no-panel .lofi-panel { display: none; }
+/* Content-only tags: read by the script, never drawn where they are written. */
+wf-board > wf-journey, wf-board > wf-link, wf-board > wf-prose,
+wf-board > wf-problem, wf-board > wf-summary { display: none; }
+
+/* ---------- Canvas ---------- */
+.lofi-canvas { overflow: auto; display: flex; position: relative; cursor: default; }
+.lofi-canvas.dragging { cursor: grabbing; user-select: none; }
+.lofi-sizer { margin: auto; flex: none; position: relative; }
+.lofi-world {
+  position: absolute; left: 0; top: 0; transform-origin: 0 0;
+  display: flex; align-items: flex-start; gap: 120px; padding: 72px;
+}
+
+/* ---------- Regions and grid cells ---------- */
+wf-region { display: block; flex: none; }
+.wf-region-head { display: flex; align-items: center; gap: 10px; margin: 0 0 14px 6px; font-size: 18px; font-weight: 650; }
+.wf-num {
+  display: inline-grid; place-items: center; flex: none;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--ink); color: var(--bg); font-size: 12px; font-weight: 700;
+}
+.wf-grid {
+  display: grid; column-gap: 120px; row-gap: 72px; align-items: start; justify-items: start;
+  background: var(--region); border-radius: 22px; padding: 44px 48px 52px;
+}
+.wf-cell { display: flex; flex-direction: column; gap: 8px; transition: opacity 0.15s; }
+.wf-cell-decision { align-self: center; justify-self: center; }
+.wf-label { font-size: 12px; font-weight: 650; line-height: 1.2; }
+.wf-new {
+  margin-left: 4px; padding: 0 5px; border: 1px dashed var(--ink-3); border-radius: 4px;
+  color: var(--ink-3); font-size: 10px; font-weight: 500;
+}
+/* A note under a screen takes the screen width but never widens the column. */
+.wf-cell > wf-note, .wf-cell > wf-question { width: 0; min-width: 100%; box-sizing: border-box; }
+.wf-free > wf-note, .wf-free > wf-question { width: 210px; min-width: 0; }
+
+wf-note { display: block; font-size: 11px; line-height: 1.4; color: var(--ink-2); }
+wf-question {
+  display: flex; gap: 7px; align-items: flex-start;
+  padding: 8px 10px; border: 1px solid var(--warn-line); border-radius: 9px;
+  background: var(--warn-bg); color: var(--warn); font-size: 11px; line-height: 1.4;
+}
+wf-question > svg { flex: none; width: 13px; height: 13px; margin-top: 1px; }
+
+wf-decision {
+  display: grid; place-items: center; position: relative;
+  width: 136px; height: 88px; text-align: center; font-size: 11px; font-weight: 650; line-height: 1.25;
+}
+wf-decision > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+wf-decision polygon { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; }
+wf-decision > span { position: relative; max-width: 80px; }
+
+/* ---------- Screens ---------- */
+wf-screen {
+  --pad: 12px;
+  display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden;
+  box-sizing: border-box; padding: 14px var(--pad) 0;
+  background: var(--paper); border: 1.5px solid var(--ink); color: var(--ink);
+  font-size: 10px; line-height: 1.3;
+}
+wf-screen, wf-screen[device=phone] { width: 204px; height: 420px; border-radius: 24px; }
+wf-screen[device=tablet] { --pad: 16px; width: 330px; height: 440px; border-radius: 16px; }
+wf-screen[device=desktop] { --pad: 16px; width: 500px; height: 310px; border-radius: 8px; }
+wf-screen[device=desktop]:has(> wf-sidebar) { padding-left: 138px; }
+wf-screen[new] { border-style: dashed; }
+wf-screen > * { flex-shrink: 0; }
+.hide-screens wf-screen > * { visibility: hidden; }
+.hide-notes wf-note, .hide-notes wf-question { visibility: hidden; }
+
+wf-screen h1 { margin: 0; font-size: 14px; font-weight: 700; line-height: 1.25; }
+wf-screen h2 { margin: 2px 0 -3px; font-size: 10.5px; font-weight: 650; }
+wf-screen p { margin: 0; font-size: 9.5px; line-height: 1.4; color: var(--ink-2); }
+wf-screen > small, wf-card > small { font-size: 8.5px; color: var(--ink-3); }
+
+wf-header { display: flex; align-items: center; gap: 7px; min-height: 20px; font-size: 12.5px; }
+wf-header b { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wf-av {
+  display: block; flex: none; box-sizing: border-box; width: 18px; height: 18px; border-radius: 50%;
+  border: 1.25px solid var(--ink-2); background: var(--fill);
+}
+.wf-back { flex: none; width: 6px; height: 6px; margin: 0 2px 0 3px; border-left: 1.5px solid; border-bottom: 1.5px solid; transform: rotate(45deg); }
+
+wf-tabbar {
+  display: flex; justify-content: space-around; margin: auto calc(-1 * var(--pad)) 0;
+  padding: 7px 4px 13px; border-top: 1px solid var(--line);
+}
+wf-tabbar > span { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 7.5px; color: var(--ink-3); }
+wf-tabbar i { width: 13px; height: 13px; border: 1.25px solid currentColor; border-radius: 4px; box-sizing: border-box; }
+wf-tabbar > .on { color: var(--ink); font-weight: 650; }
+wf-tabbar > .on i { background: currentColor; }
+
+wf-sidebar {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 120px; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 2px; padding: 14px 8px; border-right: 1px solid var(--line);
+}
+wf-sidebar > span { display: flex; align-items: center; gap: 7px; padding: 5px 6px; border-radius: 6px; color: var(--ink-2); }
+wf-sidebar i { width: 10px; height: 10px; border: 1.25px solid currentColor; border-radius: 3px; }
+wf-sidebar > .on { background: var(--fill); color: var(--ink); font-weight: 650; }
+
+wf-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+wf-tabs > span { padding: 2px 9px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 9px; color: var(--ink-2); }
+wf-tabs > .on { border-color: var(--ink); color: var(--ink); font-weight: 650; }
+
+wf-menu { display: flex; flex-direction: column; }
+wf-menu > span { display: flex; align-items: center; justify-content: space-between; padding: 7px 2px; border-bottom: 1px solid var(--line); }
+.wf-chev { width: 5px; height: 5px; border-top: 1.25px solid var(--ink-3); border-right: 1.25px solid var(--ink-3); transform: rotate(45deg); }
+
+wf-list { display: flex; flex-direction: column; }
+wf-row { display: flex; align-items: center; gap: 7px; padding: 5px 0; }
+wf-list > wf-row { border-bottom: 1px solid var(--line); }
+wf-list > wf-row:last-child { border-bottom: 0; }
+.wf-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.wf-row-text b, .wf-row-text small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wf-row-text b { font-size: 10px; font-weight: 600; }
+.wf-row-text small { font-size: 8.5px; color: var(--ink-2); }
+.wf-thumb { flex: none; width: 24px; height: 24px; border-radius: 5px; background: var(--fill); }
+
+wf-card { display: flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid var(--line-strong); border-radius: 9px; }
+.wf-title { font-size: 10.5px; font-weight: 650; }
+wf-cols { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+
+wf-avatar { display: flex; flex-direction: column; align-items: center; gap: 3px; align-self: flex-start; }
+wf-avatar .wf-av { width: 34px; height: 34px; }
+wf-avatar small { font-size: 9px; font-weight: 600; }
+
+wf-image { display: grid; place-items: center; height: 70px; border-radius: 7px; background: var(--fill); color: var(--ink-3); font-size: 9px; }
+wf-image[tall] { height: 132px; }
+wf-chart { display: block; height: 30px; }
+wf-chart svg { display: block; width: 100%; height: 100%; }
+wf-chart polyline { fill: none; stroke: var(--ink-2); stroke-width: 1.25; }
+wf-chart rect { fill: var(--line-strong); }
+
+wf-stat { display: flex; flex-direction: column; }
+wf-stat b { font-size: 14px; font-weight: 700; line-height: 1.2; }
+wf-stat small { font-size: 8.5px; color: var(--ink-2); }
+
+wf-table {
+  display: grid; grid-template-columns: repeat(var(--cols, 3), 1fr);
+  border: 1px solid var(--line-strong); border-radius: 6px; overflow: hidden; font-size: 8.5px; text-align: center;
+}
+wf-table > * { padding: 3px 2px; }
+wf-table > b { background: var(--fill); font-weight: 600; color: var(--ink-2); }
+wf-table > .off { color: var(--ink-3); text-decoration: line-through; }
+
+wf-badge { display: inline-block; flex: none; padding: 0 6px; border: 1px solid var(--ink-2); border-radius: 999px; font-size: 8px; color: var(--ink-2); }
+wf-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 10px;
+  border: 1px dashed var(--line-strong); border-radius: 9px; color: var(--ink-3); text-align: center;
+}
+wf-empty > i { width: 22px; height: 22px; border: 1.25px solid currentColor; border-radius: 50%; }
+
+wf-input, wf-select, wf-textarea { display: flex; flex-direction: column; gap: 3px; }
+wf-input > small, wf-select > small, wf-textarea > small { font-size: 8.5px; color: var(--ink-2); }
+.wf-box { display: flex; align-items: center; height: 24px; box-sizing: border-box; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: 7px; }
+.wf-area { height: 46px; align-items: flex-start; padding-top: 6px; }
+.wf-select-box { justify-content: space-between; }
+.wf-select-box::after { content: ''; width: 5px; height: 5px; margin-top: -3px; border-right: 1.25px solid var(--ink-2); border-bottom: 1.25px solid var(--ink-2); transform: rotate(45deg); }
+.wf-ph { color: var(--ink-3); }
+
+wf-search { display: flex; align-items: center; gap: 7px; height: 24px; box-sizing: border-box; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: 8px; }
+.wf-mag { position: relative; flex: none; width: 7px; height: 7px; border: 1.25px solid var(--ink-3); border-radius: 50%; }
+.wf-mag::after { content: ''; position: absolute; right: -4px; bottom: -2px; width: 4px; height: 1.25px; background: var(--ink-3); transform: rotate(45deg); }
+
+wf-check, wf-radio, wf-toggle { display: flex; align-items: center; gap: 7px; }
+wf-check > i, wf-radio > i { flex: none; box-sizing: border-box; width: 11px; height: 11px; border: 1.25px solid var(--ink-2); border-radius: 3px; }
+wf-radio > i { border-radius: 50%; }
+wf-check[checked] > i { background: var(--ink-2); box-shadow: inset 0 0 0 2px var(--paper); }
+wf-radio[checked] > i { background: var(--ink-2); box-shadow: inset 0 0 0 2.5px var(--paper); }
+wf-toggle { flex-direction: row-reverse; justify-content: space-between; }
+wf-toggle > i { position: relative; flex: none; box-sizing: border-box; width: 22px; height: 12px; border: 1.25px solid var(--ink-2); border-radius: 999px; }
+wf-toggle > i::after { content: ''; position: absolute; left: 1px; top: 1px; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-2); }
+wf-toggle[on] > i { background: var(--ink-2); }
+wf-toggle[on] > i::after { left: auto; right: 1px; background: var(--paper); }
+
+wf-button {
+  display: flex; align-items: center; justify-content: center; height: 28px; box-sizing: border-box;
+  border: 1.25px solid var(--ink); border-radius: 8px; font-size: 10px; font-weight: 600;
+}
+wf-button[primary] { background: var(--ink); color: var(--paper); }
+
+wf-modal, wf-sheet { display: flex; flex-direction: column; gap: 7px; position: absolute; z-index: 2; background: var(--paper); box-shadow: 0 0 0 999px var(--scrim); }
+wf-modal { left: 14px; right: 14px; top: 50%; transform: translateY(-50%); padding: 12px; border: 1.25px solid var(--ink); border-radius: 12px; }
+wf-sheet { left: 0; right: 0; bottom: 0; padding: 18px 14px 18px; border-top: 1.25px solid var(--ink); border-radius: 16px 16px 0 0; }
+wf-sheet::before { content: ''; position: absolute; top: 6px; left: 50%; width: 28px; height: 3px; margin-left: -14px; border-radius: 2px; background: var(--line-strong); }
+wf-toast {
+  position: absolute; z-index: 3; left: 50%; bottom: 62px; transform: translateX(-50%);
+  padding: 5px 12px; border-radius: 999px; background: var(--ink-2); color: var(--paper); font-size: 9px; white-space: nowrap;
+}
+
+/* ---------- Arrows and labels ---------- */
+.lofi-links { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.lofi-links path.wf-arrow { fill: none; stroke: var(--arrow); stroke-width: 1.25; transition: opacity 0.15s; }
+.lofi-links path.wf-arrow.on { stroke: var(--accent); stroke-width: 2; }
+#lofi-arrow path { fill: var(--arrow); }
+#lofi-arrow-on path { fill: var(--accent); }
+.lofi-steps circle { fill: var(--accent); }
+.lofi-steps text { fill: #fff; font: 700 10px var(--font); text-anchor: middle; dominant-baseline: central; }
+.lofi-labels { position: absolute; inset: 0; pointer-events: none; }
+.wf-linklabel {
+  position: absolute; transform: translate(-50%, -50%); white-space: nowrap;
+  padding: 1px 5px; border-radius: 4px; background: var(--bg); color: var(--ink-2);
+  font-size: 10.5px; line-height: 1.3; transition: opacity 0.15s;
+}
+.wf-linklabel.in-region { background: var(--region); }
+.wf-linklabel.on { color: var(--accent); }
+/* A stub stands for a long link: its label wraps, has a dashed outline, and takes clicks. */
+.lofi-links path.wf-stub-hit { fill: none; stroke: transparent; stroke-width: 12; pointer-events: stroke; cursor: pointer; }
+.wf-stublabel {
+  box-sizing: border-box; width: max-content; max-width: 84px; white-space: normal; text-align: left; font-size: 10px;
+  border: 1px dashed var(--line-strong); pointer-events: auto; cursor: pointer;
+}
+.wf-stublabel.on { border-color: var(--accent); }
+
+/* ---------- Journey focus ---------- */
+.lofi-focus .wf-cell:not(.on),
+.lofi-focus .lofi-links path.wf-arrow:not(.on),
+.lofi-focus .wf-linklabel:not(.on) { opacity: 0.25; }
+
+/* ---------- Side panel ---------- */
+.lofi-panel { overflow: auto; padding: 22px 22px 48px; border-left: 1px solid var(--line); background: var(--panel); }
+.lofi-panel h1 { margin: 0 0 6px; font-size: 17px; line-height: 1.3; }
+.lofi-h { margin: 22px 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.lofi-journeys, .lofi-questions { list-style: none; margin: 0; padding: 0; }
+.lofi-journeys li { display: flex; gap: 10px; padding: 7px 8px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; }
+.lofi-journeys li:hover { background: var(--region); }
+.lofi-journeys li.pinned { border-color: var(--accent); }
+.lofi-jn {
+  display: grid; place-items: center; flex: none; width: 20px; height: 20px; margin-top: 1px; border-radius: 50%;
+  background: var(--line-strong); color: var(--panel); font-size: 11px; font-weight: 700;
+}
+.lofi-journeys li.on .lofi-jn { background: var(--accent); color: #fff; }
+.lofi-dots { display: flex; gap: 4px; margin-top: 4px; }
+.lofi-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line-strong); }
+.lofi-journeys li.on .lofi-dots i { background: var(--accent); }
+.lofi-summary { margin: 20px 0 0; }
+.lofi-panel details { margin-top: 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.lofi-panel summary { cursor: pointer; font-weight: 600; }
+.lofi-panel details p { margin: 8px 0 0; color: var(--ink-2); }
+.lofi-section h3 { display: flex; align-items: center; gap: 8px; margin: 20px 0 6px; font-size: 14px; }
+.lofi-section p { margin: 0 0 8px; color: var(--ink-2); }
+.lofi-questions li { display: flex; gap: 8px; margin-bottom: 10px; color: var(--warn); cursor: pointer; }
+.lofi-questions .wf-num { width: 20px; height: 20px; font-size: 11px; background: var(--warn); color: var(--panel); }
+
+/* ---------- Toolbar ---------- */
+.lofi-tools {
+  position: absolute; left: 16px; bottom: 16px; z-index: 5;
+  display: flex; align-items: center; gap: 2px; padding: 4px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); font-size: 12px;
+}
+.lofi-tools button { padding: 4px 9px; border: 0; border-radius: 6px; background: none; color: var(--ink); font: inherit; cursor: pointer; }
+.lofi-tools button:hover { background: var(--region); }
+.lofi-tools button.off { color: var(--ink-3); text-decoration: line-through; }
+.lofi-zoom { min-width: 44px; text-align: center; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.lofi-sep { width: 1px; height: 18px; margin: 0 4px; background: var(--line); }
+.lofi-tools .lofi-badge { margin-left: 4px; background: var(--warn); color: var(--panel); font-weight: 650; }
+.lofi-tools .lofi-badge:hover { background: var(--warn); opacity: 0.85; }
+.lofi-tools .lofi-badge[hidden] { display: none; }

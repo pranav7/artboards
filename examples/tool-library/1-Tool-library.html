@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tool library journeys</title>
+<link rel="stylesheet" href="/_kit/lofi.css">
+<script src="/_kit/lofi.js"></script>
+</head>
+<body>
+<wf-board name="Tool library · Option A (phone)">
+
+  <wf-summary>Members find a tool by walking distance first, ask to borrow it with one request, and see every loan in the Borrowed tab. The same five tabs sit on every screen, so any part of the app is one tap away.</wf-summary>
+
+  <wf-problem>
+    <p>About 60 neighbours on Elm Street share 140 tools through a paper sheet in the community hall. Nobody knows what is free until they walk over, and nobody knows who has the ladder.</p>
+    <p>This option puts the sheet on a phone with the fewest screens that still cover finding, borrowing and returning a tool.</p>
+  </wf-problem>
+
+  <wf-journey name="Find a drill near you" steps="home, search@home-type, tool"></wf-journey>
+  <wf-journey name="Borrow a tool this weekend" steps="tool, free, dates, sent"></wf-journey>
+  <wf-journey name="Join the waitlist for a busy tool" steps="search, tool, free, waitlist"></wf-journey>
+  <wf-journey name="See what you have borrowed" steps="home, borrowed"></wf-journey>
+  <wf-journey name="Return a tool" steps="borrowed, return-tool, borrowed"></wf-journey>
+  <wf-journey name="Get home in one tap" steps="profile, home"></wf-journey>
+  <wf-journey name="Check where a tool is on the map" steps="search, map, tool"></wf-journey>
+  <wf-journey name="Ask the lender about pickup" steps="dates, sent, messages"></wf-journey>
+
+  <wf-region id="nav" name="Global nav">
+    <wf-screen id="profile" device="phone" name="Profile tab" col="1" row="1">
+      <wf-header name="Profile"></wf-header>
+      <wf-avatar name="Priya Shah"></wf-avatar>
+      <wf-cols>
+        <wf-stat label="Lent" value="12"></wf-stat>
+        <wf-stat label="Borrowed" value="7"></wf-stat>
+        <wf-stat label="Rating" value="4.9"></wf-stat>
+      </wf-cols>
+      <wf-menu items="My tools, Lending rules, Notifications, Help"></wf-menu>
+      <wf-button>Sign out</wf-button>
+      <wf-tabbar id="profile-tabs" items="Home, Search, Borrowed, Messages, Profile" active="Profile"></wf-tabbar>
+    </wf-screen>
+    <wf-note for="profile">The same five tabs sit at the bottom of every screen.</wf-note>
+
+    <wf-screen id="messages" device="phone" name="Messages tab" col="1" row="2">
+      <wf-header name="Messages"></wf-header>
+      <wf-search placeholder="Search messages"></wf-search>
+      <wf-list>
+        <wf-row avatar name="Maya Chen" meta="Sure, pick it up after 6"></wf-row>
+        <wf-row avatar name="Tom Okafor" meta="Is the ladder free on Saturday?"></wf-row>
+        <wf-row avatar name="Elm Street Library" meta="Hedge trimmer is due Sunday"></wf-row>
+        <wf-row avatar name="Sam Rivera" meta="Thanks, the sander works well"></wf-row>
+      </wf-list>
+      <wf-tabbar items="Home, Search, Borrowed, Messages, Profile" active="Messages"></wf-tabbar>
+    </wf-screen>
+  </wf-region>
+
+  <wf-region id="find" name="Finding a tool">
+    <wf-screen id="home" device="phone" name="Home tab" col="1" row="1">
+      <wf-header name="Tool library"></wf-header>
+      <wf-search id="home-search" placeholder="Search tools"></wf-search>
+      <h2>Near you</h2>
+      <wf-list>
+        <wf-row thumb name="Cordless drill" meta="Maya Chen · 120 m"></wf-row>
+        <wf-row thumb name="Step ladder, 6 ft" meta="Tom Okafor · 300 m"></wf-row>
+        <wf-row thumb name="Hedge trimmer" meta="Sam Rivera · 450 m"></wf-row>
+      </wf-list>
+      <h2>Popular this week</h2>
+      <wf-cols>
+        <wf-card name="Tile saw"><small>9 loans</small></wf-card>
+        <wf-card name="Pressure washer"><small>7 loans</small></wf-card>
+      </wf-cols>
+      <wf-tabbar id="home-tabs" items="Home, Search, Borrowed, Messages, Profile" active="Home"></wf-tabbar>
+    </wf-screen>
+    <wf-note for="home">Near you is sorted by walking distance, not by rating.</wf-note>
+
+    <wf-screen id="search" device="phone" name="Search results" col="2" row="1">
+      <wf-header back name="Search"></wf-header>
+      <wf-search value="drill"></wf-search>
+      <wf-tabs id="search-tabs" items="List, Map" active="List"></wf-tabs>
+      <small>6 tools within 1 km</small>
+      <wf-list>
+        <wf-row avatar name="Cordless drill 18V" meta="Maya Chen · 120 m"><wf-badge>Free</wf-badge></wf-row>
+        <wf-row avatar name="Hammer drill" meta="Tom Okafor · 300 m"><wf-badge>Out</wf-badge></wf-row>
+        <wf-row avatar name="Drill bit set" meta="Ana Lopes · 600 m"><wf-badge>Free</wf-badge></wf-row>
+        <wf-row avatar name="Drill press" meta="Community hall · 900 m"><wf-badge>Free</wf-badge></wf-row>
+      </wf-list>
+      <wf-tabbar items="Home, Search, Borrowed, Messages, Profile" active="Search"></wf-tabbar>
+    </wf-screen>
+
+    <wf-screen id="map" device="phone" name="Search results · Map" col="2" row="2">
+      <wf-header back name="Search"></wf-header>
+      <wf-search value="drill"></wf-search>
+      <wf-tabs items="List, Map" active="Map"></wf-tabs>
+      <wf-image tall label="map with 6 pins"></wf-image>
+      <wf-card name="Cordless drill 18V"><small>Maya Chen · 120 m · free this weekend</small></wf-card>
+      <wf-tabbar items="Home, Search, Borrowed, Messages, Profile" active="Search"></wf-tabbar>
+    </wf-screen>
+    <wf-question for="map">Should Search open on the map when location is on? Not decided.</wf-question>
+
+    <wf-screen id="tool" device="phone" name="Tool page" col="3" row="1">
+      <wf-header back name="Cordless drill 18V"></wf-header>
+      <wf-image label="photo"></wf-image>
+      <wf-row avatar name="Maya Chen" meta="Owner · 120 m away"></wf-row>
+      <wf-cols>
+        <wf-stat label="Condition" value="Good"></wf-stat>
+        <wf-stat label="Loans" value="23"></wf-stat>
+      </wf-cols>
+      <wf-table>
+        Sat | Sun | Mon | Tue | Wed | Thu | Fri
+        19 | 20 | 21 | ~22 | ~23 | 24 | 25
+      </wf-table>
+      <wf-button primary id="tool-borrow">Borrow</wf-button>
+      <wf-tabbar items="Home, Search, Borrowed, Messages, Profile" active="Search"></wf-tabbar>
+    </wf-screen>
+    <wf-note for="tool">The strip shows the next 7 days. Struck-out days are booked.</wf-note>
+  </wf-region>
+
+  <wf-region id="borrow" name="Borrowing">
+    <wf-decision id="free" name="Free on those dates?" col="1" row="1"></wf-decision>
+
+    <wf-screen id="dates" device="phone" name="Pick dates and confirm" col="2" row="1">
+      <wf-header back name="Borrow the drill"></wf-header>
+      <wf-select label="From" value="Sat 19 Oct"></wf-select>
+      <wf-select label="Until" value="Sun 20 Oct"></wf-select>
+      <wf-textarea label="Pickup note for Maya" value="I can pick it up at 9 am."></wf-textarea>
+      <wf-check checked>I will return it charged</wf-check>
+      <wf-check checked>Remind me the day before</wf-check>
+      <wf-button primary id="dates-send">Request to borrow</wf-button>
+      <wf-tabbar items="Home, Search, Borrowed, Messages, Profile" active="Search"></wf-tabbar>
+    </wf-screen>
+    <wf-note for="dates">The pickup note goes to the lender with the request.</wf-note>
+
+    <wf-screen id="sent" device="phone" name="Request sent" new col="3" row="1">
+      <wf-header name="Request sent"></wf-header>
+      <h1>Maya has your request</h1>
+      <p>Maya usually replies within 2 hours. We will tell you when she does.</p>
+      <wf-card name="Cordless drill 18V"><small>Sat 19 to Sun 20 Oct · pickup at 9 am</small></wf-card>
+      <wf-button id="sent-chat">Message Maya</wf-button>
+      <wf-button>Back to search</wf-button>
+      <wf-toast>Request sent</wf-toast>
+      <wf-tabbar items="Home, Search, Borrowed, Messages, Profile" active="Search"></wf-tabbar>
+    </wf-screen>
+    <wf-question for="sent">Does the lender approve each request, or is it automatic? Not decided.</wf-question>
+
+    <wf-screen id="waitlist" device="phone" name="Join the waitlist" new col="2" row="2">
+      <wf-header back name="Hammer drill"></wf-header>
+      <wf-image label="photo"></wf-image>
+      <p>Out until Tue 22 Oct. 2 people are waiting.</p>
+      <h2>When do you need it?</h2>
+      <wf-radio checked>The next free weekend</wf-radio>
+      <wf-radio>Any 2 days this month</wf-radio>
+      <wf-toggle on>Tell me when it is free</wf-toggle>
+      <wf-button primary>Join the waitlist</wf-button>
+      <wf-tabbar items="Home, Search, Borrowed, Messages, Profile" active="Search"></wf-tabbar>
+    </wf-screen>
+    <wf-question for="waitlist">How long does a waitlist place hold the tool? Not decided.</wf-question>
+  </wf-region>
+
+  <wf-region id="return" name="Returning">
+    <wf-screen id="borrowed" device="phone" name="Borrowed tab" col="1" row="1">
+      <wf-header name="Borrowed"></wf-header>
+      <wf-tabs items="Now, Past" active="Now"></wf-tabs>
+      <wf-card name="Return by Sunday">
+        <wf-row thumb name="Step ladder, 6 ft" meta="Tom Okafor · due Sun 20 Oct"></wf-row>
+        <wf-button id="borrowed-return">Return now</wf-button>
+      </wf-card>
+      <wf-list>
+        <wf-row thumb name="Tile saw" meta="Ana Lopes · due Fri 25 Oct"></wf-row>
+        <wf-row thumb name="Orbital sander" meta="Sam Rivera · due Mon 28 Oct"></wf-row>
+      </wf-list>
+      <wf-tabbar items="Home, Search, Borrowed, Messages, Profile" active="Borrowed"></wf-tabbar>
+    </wf-screen>
+    <wf-note for="borrowed">Loans due in the next 2 days move to the top.</wf-note>
+
+    <wf-screen id="return-tool" device="phone" name="Return a tool" col="2" row="1">
+      <wf-header back name="Return the ladder"></wf-header>
+      <wf-image label="photo of the ladder"></wf-image>
+      <wf-select label="Condition" value="Same as when I got it"></wf-select>
+      <wf-textarea label="Note for Tom" placeholder="Anything Tom should know"></wf-textarea>
+      <wf-button primary id="return-done">Mark as returned</wf-button>
+      <wf-tabbar items="Home, Search, Borrowed, Messages, Profile" active="Borrowed"></wf-tabbar>
+    </wf-screen>
+  </wf-region>
+
+  <wf-link id="home-type" from="home-search" to="search" label="type"></wf-link>
+  <wf-link id="home-tab-search" from="home-tabs" to="search" label="Search tab"></wf-link>
+  <wf-link from="search" to="tool" label="tap a tool"></wf-link>
+  <wf-link id="search-map" from="search-tabs" to="map" label="Map"></wf-link>
+  <wf-link from="map" to="tool" label="tap a pin"></wf-link>
+  <wf-link from="tool-borrow" to="free" label="Borrow"></wf-link>
+  <wf-link from="free" to="dates" label="yes"></wf-link>
+  <wf-link from="free" to="waitlist" label="no" exit="bottom"></wf-link>
+  <wf-link from="dates-send" to="sent" label="request"></wf-link>
+  <wf-link from="sent-chat" to="messages" label="open chat"></wf-link>
+  <wf-link id="home-borrowed" from="home-tabs" to="borrowed" label="tab bar"></wf-link>
+  <wf-link from="borrowed-return" to="return-tool" label="return now"></wf-link>
+  <wf-link from="return-done" to="borrowed" label="mark returned"></wf-link>
+  <wf-link from="profile-tabs" to="home" label="Home tab"></wf-link>
+
+  <wf-prose region="nav">
+    <p>Five tabs, always visible. Profile holds the settings people change rarely, so it sits last. Messages is a tab because most loans need one short chat about pickup.</p>
+  </wf-prose>
+  <wf-prose region="find">
+    <p>Home leads with a search box and tools near you. Results show distance and the owner, since people borrow from neighbours they can walk to. The map is a second view of the same results, not a separate place.</p>
+  </wf-prose>
+  <wf-prose region="borrow">
+    <p>One check decides the path: is the tool free on the dates you picked? If yes, you send a request with a pickup note. If no, you join a waitlist. Both end screens are new.</p>
+  </wf-prose>
+  <wf-prose region="return">
+    <p>The Borrowed tab puts the next due loan in a card at the top. Returning takes a photo and a condition, so the lender can see the tool came back in good shape.</p>
+  </wf-prose>
+</wf-board>
+</body>
+</html>

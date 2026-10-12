@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Local HTML artboards for UI design reviews. Run `artboards -h`.
+# This script runs the artboards package with the versions pinned in uv.lock.
+# Put it on PATH with a symlink.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+export UV_PROJECT_ENVIRONMENT="${ARTBOARDS_VENV:-$HOME/.cache/artboards/venv}"
+export PYTHONDONTWRITEBYTECODE=1
+
+# launchd runs with a short PATH, so look in uv's default install dir too.
+UV="$(command -v uv || true)"
+[[ -n "$UV" ]] || UV="$HOME/.local/bin/uv"
+if [[ ! -x "$UV" ]]; then
+  echo "artboards needs uv: https://docs.astral.sh/uv/getting-started/installation/" >&2
+  exit 1
+fi
+
+run() { "$UV" run --quiet --frozen --project "$ROOT" "$@"; }
+
+# Sync the env, download Chromium for Playwright, then check the example board.
+doctor() {
+  echo "Syncing Python env at $UV_PROJECT_ENVIRONMENT"
+  "$UV" sync --quiet --frozen --project "$ROOT"
+  echo "Installing Chromium for Playwright"
+  run playwright install chromium
+  echo "Checking the example board"
+  run artboards check "$ROOT/examples/tool-library/1-Tool-library.html"
+  run artboards status
+}
+
+case "${1:-}" in
+  doctor) doctor ;;
+  test) shift; run pytest "$ROOT/tests" "$@" ;;
+  "") run artboards -h ;;
+  *) run artboards "$@" ;;
+esac

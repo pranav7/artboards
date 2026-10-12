@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Broken board: label-overlap</title>
+<link rel="stylesheet" href="/_kit/lofi.css">
+<script src="/_kit/lofi.js"></script>
+</head>
+<body>
+<!-- Too many labelled links between two screens for their labels to fit. -->
+<wf-board name="Broken board: label-overlap">
+  <wf-summary>Members find a tool and open its page.</wf-summary>
+  <wf-problem><p>Neighbours cannot see which tools are free.</p></wf-problem>
+  <wf-journey name="Find a tool" steps="home, tool"></wf-journey>
+
+  <wf-region id="find" name="Finding a tool">
+    <wf-screen id="home" device="phone" name="Home" col="1" row="1">
+      <wf-header name="Tool library"></wf-header>
+      <wf-search id="home-search" placeholder="Search tools"></wf-search>
+      <wf-list>
+        <wf-row thumb name="Cordless drill" meta="Maya Chen, 120 m"></wf-row>
+        <wf-row thumb name="Step ladder" meta="Tom Okafor, 300 m"></wf-row>
+      </wf-list>
+      <wf-tabbar items="Home, Borrowed, Profile" active="Home"></wf-tabbar>
+    </wf-screen>
+
+    <wf-screen id="tool" device="phone" name="Tool page" col="2" row="1">
+      <wf-header back name="Cordless drill"></wf-header>
+      <wf-image label="photo"></wf-image>
+      <p>Free this weekend.</p>
+      <wf-button primary>Borrow</wf-button>
+    </wf-screen>
+    <wf-note for="tool">The page shows the next free days.</wf-note>
+  </wf-region>
+
+  <wf-link id="home-tool" from="home-search" to="tool" label="tap a tool"></wf-link>
+  <wf-link id="extra-1" from="tool" to="home" label="another long label 1"></wf-link>
+  <wf-link id="extra-2" from="tool" to="home" label="another long label 2"></wf-link>
+  <wf-link id="extra-3" from="tool" to="home" label="another long label 3"></wf-link>
+  <wf-link id="extra-4" from="tool" to="home" label="another long label 4"></wf-link>
+  <wf-link id="extra-5" from="tool" to="home" label="another long label 5"></wf-link>
+  <wf-link id="extra-6" from="tool" to="home" label="another long label 6"></wf-link>
+  <wf-link id="extra-7" from="tool" to="home" label="another long label 7"></wf-link>
+  <wf-link id="extra-8" from="tool" to="home" label="another long label 8"></wf-link>
+  <wf-link id="extra-9" from="tool" to="home" label="another long label 9"></wf-link>
+  <wf-link id="extra-10" from="tool" to="home" label="another long label 10"></wf-link>
+  <wf-link id="extra-11" from="tool" to="home" label="another long label 11"></wf-link>
+  <wf-link id="extra-12" from="tool" to="home" label="another long label 12"></wf-link>
+  <wf-link id="extra-13" from="tool" to="home" label="another long label 13"></wf-link>
+  <wf-link id="extra-14" from="tool" to="home" label="another long label 14"></wf-link>
+  <wf-link id="extra-15" from="tool" to="home" label="another long label 15"></wf-link>
+  <wf-link id="extra-16" from="tool" to="home" label="another long label 16"></wf-link>
+  <wf-link id="extra-17" from="tool" to="home" label="another long label 17"></wf-link>
+  <wf-link id="extra-18" from="tool" to="home" label="another long label 18"></wf-link>
+  <wf-link id="extra-19" from="tool" to="home" label="another long label 19"></wf-link>
+  <wf-link id="extra-20" from="tool" to="home" label="another long label 20"></wf-link>
+  <wf-link id="extra-21" from="tool" to="home" label="another long label 21"></wf-link>
+  <wf-link id="extra-22" from="tool" to="home" label="another long label 22"></wf-link>
+  <wf-link id="extra-23" from="tool" to="home" label="another long label 23"></wf-link>
+  <wf-link id="extra-24" from="tool" to="home" label="another long label 24"></wf-link>
+
+  <wf-prose region="find"><p>Search first, then the tool page.</p></wf-prose>
+</wf-board>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Broken board: arrow-crosses-screen</title>
+<link rel="stylesheet" href="/_kit/lofi.css">
+<script src="/_kit/lofi.js"></script>
+</head>
+<body>
+<!-- The tool page is pulled left until the gap is too narrow to route through, so the long home to done link falls back to a straight elbow through it. -->
+<wf-board name="Broken board: arrow-crosses-screen">
+  <wf-summary>Members find a tool and open its page.</wf-summary>
+  <wf-problem><p>Neighbours cannot see which tools are free.</p></wf-problem>
+  <wf-journey name="Find a tool" steps="home, tool"></wf-journey>
+  <wf-journey name="Ask for a tool" steps="home, done"></wf-journey>
+
+  <wf-region id="find" name="Finding a tool">
+    <wf-screen id="home" device="phone" name="Home" col="1" row="1">
+      <wf-header name="Tool library"></wf-header>
+      <wf-search id="home-search" placeholder="Search tools"></wf-search>
+      <wf-list>
+        <wf-row thumb name="Cordless drill" meta="Maya Chen, 120 m"></wf-row>
+        <wf-row thumb name="Step ladder" meta="Tom Okafor, 300 m"></wf-row>
+      </wf-list>
+      <wf-tabbar items="Home, Borrowed, Profile" active="Home"></wf-tabbar>
+    </wf-screen>
+
+    <wf-screen id="tool" device="phone" name="Tool page" col="2" row="1" style="margin-left: -110px">
+      <wf-header back name="Cordless drill"></wf-header>
+      <wf-image label="photo"></wf-image>
+      <p>Free this weekend.</p>
+      <wf-button primary>Borrow</wf-button>
+    </wf-screen>
+    <wf-note for="tool">The page shows the next free days.</wf-note>
+    <wf-screen id="done" device="phone" name="Request sent" col="3" row="1">
+      <wf-header name="Request sent"></wf-header>
+      <p>Maya has your request.</p>
+    </wf-screen>
+  </wf-region>
+
+  <wf-link id="home-tool" from="home-search" to="tool" label="tap a tool"></wf-link>
+  <wf-link id="home-done" from="home" to="done" label="ask" stub="false"></wf-link>
+
+  <wf-prose region="find"><p>Search first, then the tool page.</p></wf-prose>
+</wf-board>
+</body>
+</html>

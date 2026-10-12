@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Broken board: kit-error</title>
+<!-- Stands in for a kit whose ready promise fails. -->
+<script>window.wf = { ready: Promise.reject(new Error("routing failed")), problems: () => [] };
+window.wf.ready.catch(() => {});</script>
+</head>
+<body style="background: #fff">
+<wf-board name="Broken board: kit-error"></wf-board>
+</body>
+</html>
