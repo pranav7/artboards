@@ -1,0 +1,24 @@
+{
+  "session": "tool-app",
+  "workspace": "main",
+  "repo": "tool-app",
+  "repo_path": "",
+  "branch": "feature/borrow-flow",
+  "title": "Borrow flow",
+  "created": "2026-10-12T09:30:00Z",
+  "active": true,
+  "artboards": [
+    {
+      "file": "1-Tool-library.html",
+      "title": "1 - borrowing a tool, journey board",
+      "state": "open",
+      "note": "Eight journeys in four regions. Open: the map default, lender approval and how long a waitlist place holds."
+    },
+    {
+      "file": "2-Tool-page.html",
+      "title": "2 - the tool page",
+      "state": "open",
+      "note": "Details screen \"tool\" from the journey board. Open: does the page pick the next free weekend, or wait for the member to pick dates?"
+    }
+  ]
+}
