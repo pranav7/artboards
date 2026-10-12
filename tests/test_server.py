@@ -1,3 +1,4 @@
+import json
 import http.client
 import threading
 
@@ -102,3 +103,40 @@ def test_tidy_loop_survives_a_failure(monkeypatch, capsys):
         server.tidy_loop(1)
     assert len(calls) == 2
     assert "tidy blew up" in capsys.readouterr().err
+
+
+def post(port, path, origin):
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+    conn.request("POST", path, headers={"Origin": origin} if origin else {})
+    resp = conn.getresponse()
+    resp.read()
+    conn.close()
+    return resp.status
+
+
+def test_archive_and_reopen_buttons(home, running):
+    folder = make_group(home, "g--live--1", {"title": "Live board", "artboards": [{"file": "1-a.html", "state": "open"}]},
+                        files={"1-a.html": "x"})
+    origin = f"http://localhost:{running}"
+    assert post(running, "/_api/archive/g--live--1", origin) == 200
+    meta = json.loads((folder / "meta.json").read_text())
+    assert meta["active"] is False and meta["closed"]["reason"] == "by-hand"
+    assert b"Live board" not in get(running, "/")[2]
+    assert b'data-action="reopen" data-key="g--live--1"' in get(running, "/history")[2]
+
+    assert post(running, "/_api/reopen/g--live--1", f"http://127.0.0.1:{running}") == 200
+    meta = json.loads((folder / "meta.json").read_text())
+    assert meta["active"] is True and meta["keep"] is True and "closed" not in meta
+    assert b'data-action="archive" data-key="g--live--1"' in get(running, "/")[2]
+
+
+def test_buttons_refuse_other_origins_and_bad_paths(home, running):
+    folder = make_group(home, "g--live--1", {"title": "Live board"}, files={"1-a.html": "x"})
+    before = (folder / "meta.json").read_text()
+    assert post(running, "/_api/archive/g--live--1", None) == 403
+    assert post(running, "/_api/archive/g--live--1", "https://example.com") == 403
+    assert post(running, "/_api/archive/g--live--1", "http://localhost:1") == 403
+    assert post(running, "/_api/archive/nope", f"http://localhost:{running}") == 404
+    assert post(running, "/_api/delete/g--live--1", f"http://localhost:{running}") == 404
+    assert post(running, "/_api/archive/..", f"http://localhost:{running}") == 404
+    assert (folder / "meta.json").read_text() == before

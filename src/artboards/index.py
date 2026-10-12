@@ -81,17 +81,21 @@ body{
   font-variant-numeric:tabular-nums;
 }
 a{color:inherit}
-.page{display:flex; flex-direction:column; gap:40px; max-width:78ch; padding:72px 32px 96px}
+.page{display:flex; flex-direction:column; gap:40px; padding:72px 32px 96px}
 .head{display:flex; flex-direction:column; gap:6px}
 h1{margin:0; font-size:15px; font-weight:600; letter-spacing:.01em}
 .meta{margin:0; font-size:11.5px; font-weight:500; color:var(--dim)}
 .bit{white-space:nowrap}
 .sep{color:var(--faint)}
-.groups{display:flex; flex-direction:column; gap:34px}
+.groups{display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 64ch), 1fr)); gap:34px 48px; align-items:start}
 .group{display:flex; flex-direction:column; gap:12px; border-top:1px solid var(--rule); padding-top:16px}
 .group-head{display:flex; flex-direction:column; gap:4px}
 .group-title{display:flex; align-items:baseline; flex-wrap:wrap; gap:8px}
 .name{font-size:13px; font-weight:600}
+.act{margin-left:auto; font:inherit; font-size:11.5px; color:var(--dim); background:none; border:1px solid var(--rule); border-radius:4px; padding:1px 8px; cursor:pointer}
+.act:hover{color:var(--ink); border-color:var(--dim)}
+.act:focus-visible{outline:1.5px solid var(--accent); outline-offset:1px}
+.act:disabled{opacity:.5; cursor:default}
 .pill{display:inline-flex; align-items:center; padding:1px 8px; border-radius:999px}
 .tag{font-size:11.5px; font-weight:500; color:var(--dim); background:var(--tag-bg)}
 .rows{display:flex; flex-direction:column; gap:1px}
@@ -121,6 +125,20 @@ h1{margin:0; font-size:15px; font-weight:600; letter-spacing:.01em}
 .foot a, .head a{color:var(--dim); text-underline-offset:3px}
 .foot a:hover, .head a:hover{color:var(--ink)}
 .empty{margin:0; color:var(--dim)}
+"""
+
+
+# Archive and Reopen post to the server, then reload. The page works without it.
+SCRIPT = """
+document.addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  button.disabled = true;
+  const url = '/_api/' + button.dataset.action + '/' + encodeURIComponent(button.dataset.key);
+  const response = await fetch(url, { method: 'POST' }).catch(() => null);
+  if (response && response.ok) location.reload();
+  else { button.disabled = false; button.textContent = 'Failed, try again'; }
+});
 """
 
 
@@ -157,11 +175,13 @@ def render_row(group, row):
             f'<span class="when">{when(row["mtime"])}</span>{note}</a>')
 
 
-def render_group(group, rows, bits):
+def render_group(group, rows, bits, action):
     tags = "".join(f'<span class="tag pill">{esc(group[k])}</span>' for k in ("repo", "branch") if group[k])
     line = " ".join(bit_span(b, first=(i == 0)) for i, b in enumerate(b for b in bits if b))
+    button = (f'<button type="button" class="act" data-action="{action}" data-key="{esc(group["key"])}">'
+              f'{action.capitalize()}</button>')
     return ('<section class="group"><div class="group-head">'
-            f'<div class="group-title"><span class="name">{esc(group["title"])}</span>{tags}</div>'
+            f'<div class="group-title"><span class="name">{esc(group["title"])}</span>{tags}{button}</div>'
             f'<p class="meta">{line}</p></div>'
             f'<div class="rows">{"".join(render_row(group, r) for r in rows)}</div></section>')
 
@@ -176,7 +196,7 @@ def page(title, lead, body):
             'family=IBM+Plex+Mono:wght@400;500;600&display=swap">'
             f'<style>{CSS}</style></head><body><main class="page">'
             f'<div class="head"><h1>{esc(title)}</h1>{lead}</div>'
-            f'{body}</main></body></html>\n')
+            f'{body}</main><script>{SCRIPT}</script></body></html>\n')
 
 
 def render_main(groups):
@@ -196,7 +216,7 @@ def render_main(groups):
         boards = sum(len(rows) for _, rows in shown)
         lead = f'<p class="meta">{plural(len(shown), "group")} · {plural(boards, "artboard")}</p>'
         body = ('<div class="groups">'
-                + "".join(render_group(g, rows, [g["session"], f'last change {when(g["newest"])}'])
+                + "".join(render_group(g, rows, [g["session"], f'last change {when(g["newest"])}'], "archive")
                           for g, rows in shown)
                 + "</div>")
     else:
@@ -213,7 +233,8 @@ def render_history(groups):
     lead = '<p class="meta"><a href="/">back to the review queue</a></p>'
     if closed:
         body = ('<div class="groups">'
-                + "".join(render_group(g, g["rows"], [g["reason"], g["session"], f'last change {when(g["newest"])}'])
+                + "".join(render_group(g, g["rows"], [g["reason"], g["session"], f'last change {when(g["newest"])}'],
+                                       "reopen")
                           for g in closed)
                 + "</div>")
     else:

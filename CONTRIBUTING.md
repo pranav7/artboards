@@ -45,7 +45,9 @@ Two environment variables change the defaults:
    runs generic checks: script errors, dark-only tokens, a transparent body, and text
    overflow.
 5. `artboards serve` serves the data folder and the kit on `127.0.0.1`. It makes the
-   review queue (`/`) and the history (`/history`) from `meta.json` on each request.
+   review queue (`/`) and the history (`/history`) from `meta.json` on each request. The
+   **Archive** and **Reopen** buttons post to `/_api/archive/<key>` and `/_api/reopen/<key>`.
+   The server accepts a post only when its `Origin` header is the server itself.
 6. The server runs tidy at start and then every hour. Tidy closes an active group on the
    first rule that matches:
    1. `pr-merged`: a pull request from the group's branch merged after the group was
