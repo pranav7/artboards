@@ -6,7 +6,7 @@
   "branch": "feature/borrow-flow",
   "title": "Borrow flow",
   "created": "2026-10-12T09:30:00Z",
-  "active": true,
+  "active": false,
   "artboards": [
     {
       "file": "1-Tool-library.html",
@@ -20,5 +20,10 @@
       "state": "open",
       "note": "Details screen \"tool\" from the journey board. Open: does the page pick the next free weekend, or wait for the member to pick dates?"
     }
-  ]
+  ],
+  "closed": {
+    "reason": "by-hand",
+    "at": "2026-10-14T15:16:32Z",
+    "detail": "closed by hand"
+  }
 }
