@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clean board: a decision with three arrows</title>
+<link rel="stylesheet" href="/_kit/lofi.css">
+<script src="/_kit/lofi.js"></script>
+</head>
+<body>
+<!-- A decision with one arrow in and three out, and a button that links on. No errors, no warnings, no jog in the straight arrows. -->
+<wf-board name="Clean board: a decision with three arrows">
+  <wf-journey name="Import" steps="start, found, changes"></wf-journey>
+  <wf-journey name="Upload" steps="start, found, fail, upload"></wf-journey>
+  <wf-journey name="Wait" steps="start, found, wait"></wf-journey>
+
+  <wf-region id="a" name="Start">
+    <wf-screen id="start" device="phone" name="Start" col="1" row="1">
+      <wf-header name="Methodology"></wf-header>
+      <wf-button primary>Find work papers</wf-button>
+    </wf-screen>
+    <wf-note for="start">Searches the firm's engagements.</wf-note>
+    <wf-decision id="found" name="Papers found?" col="2" row="1"></wf-decision>
+  </wf-region>
+
+  <wf-region id="b" name="Outcome">
+    <wf-screen id="changes" device="phone" name="Proposed changes" col="1" row="1">
+      <wf-header name="Changes"></wf-header>
+      <wf-button primary>Accept</wf-button>
+    </wf-screen>
+    <wf-screen id="fail" device="phone" name="Not found" col="2" row="1">
+      <wf-header name="Not found"></wf-header>
+      <wf-modal name="Nothing found"><wf-button id="upload-btn" primary>Upload instead</wf-button></wf-modal>
+    </wf-screen>
+    <wf-screen id="upload" device="phone" name="Upload" col="3" row="1">
+      <wf-header name="Upload"></wf-header>
+    </wf-screen>
+    <wf-screen id="wait" device="phone" name="Waiting" col="1" row="2">
+      <wf-header name="Waiting"></wf-header>
+    </wf-screen>
+  </wf-region>
+
+  <wf-link id="start-found" from="start" to="found" label="search"></wf-link>
+  <wf-link id="found-changes" from="found" to="changes" label="yes"></wf-link>
+  <wf-link id="found-fail" from="found" to="fail" label="no"></wf-link>
+  <wf-link id="found-wait" from="found" to="wait" label="busy"></wf-link>
+  <wf-link id="fail-upload" from="upload-btn" to="upload" label="upload instead"></wf-link>
+
+  <wf-prose region="a"><p>One question decides the path.</p></wf-prose>
+  <wf-prose region="b"><p>Each answer has a screen.</p></wf-prose>
+</wf-board>
+</body>
+</html>

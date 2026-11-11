@@ -9,8 +9,8 @@ from conftest import EXAMPLE_BOARD, FIXTURES, require
 from artboards import browser, paths
 
 LOFI_ERRORS = ["unknown-tag", "misplaced-tag", "duplicate-id", "missing-id", "no-link", "ambiguous-step", "cell-taken",
-               "overlap", "overflow", "arrow-crosses-screen"]
-LOFI_WARNS = ["label-overlap", "unreached-screen", "screen-not-in-journey", "two-primaries"]
+               "overlap", "overflow", "arrow-crosses-screen", "arrow-crosses-note", "arrow-overlap"]
+LOFI_WARNS = ["label-overlap", "unreached-screen", "screen-not-in-journey", "two-primaries", "arrow-crosses-arrow"]
 
 
 @pytest.fixture(scope="module")
@@ -30,6 +30,24 @@ def errors(problems):
 def test_clean_board_has_no_errors(chrome):
     problems = browser.check_page(chrome, require(FIXTURES / "lofi-clean.html"))
     assert errors(problems) == []
+
+
+def test_decision_with_three_arrows_is_clean(chrome):
+    """Ends that would share a corner of a decision spread over the free corners, and facing ports line up."""
+    path = require(FIXTURES / "lofi-decision-clean.html")
+    assert browser.check_page(chrome, path) == []
+    page = browser.open_page(chrome, path)
+    page.evaluate("() => window.wf.ready")
+    paths = page.evaluate("() => [...document.querySelectorAll('.wf-arrow')].map((p) => p.getAttribute('d'))")
+    page.close()
+    straight = [d for d in paths if "Q" not in d]
+    assert len(straight) >= 3, paths   # search, yes and upload instead run straight, with no jog
+
+
+def test_decision_text_that_spills_out_of_the_diamond_is_an_error(chrome):
+    problems = browser.check_page(chrome, require(FIXTURES / "lofi-decision-overflow.html"))
+    assert [(p["level"], p["code"]) for p in problems] == [("error", "overflow")], problems
+    assert "decision found" in problems[0]["message"] and "diamond" in problems[0]["message"]
 
 
 def test_example_board_has_no_errors(chrome):
