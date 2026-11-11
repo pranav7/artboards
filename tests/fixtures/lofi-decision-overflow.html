@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Broken board: decision-overflow</title>
+<link rel="stylesheet" href="/_kit/lofi.css">
+<script src="/_kit/lofi.js"></script>
+</head>
+<body>
+<!-- The question is too long for the diamond, so its corners spill out. -->
+<wf-board name="Broken board: decision-overflow">
+  <wf-journey name="Ask" steps="home, found"></wf-journey>
+  <wf-region id="ask" name="Asking">
+    <wf-screen id="home" device="phone" name="Home" col="1" row="1">
+      <wf-header name="Home"></wf-header>
+      <p>Free this weekend.</p>
+      <wf-button primary>Next</wf-button>
+    </wf-screen>
+    <wf-decision id="found" name="Work papers found in the firm's engagements?" col="2" row="1"></wf-decision>
+  </wf-region>
+  <wf-link id="home-found" from="home" to="found" label="search"></wf-link>
+  <wf-prose region="ask"><p>One question.</p></wf-prose>
+</wf-board>
+</body>
+</html>

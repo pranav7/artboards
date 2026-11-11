@@ -19,7 +19,9 @@
   const STUB_RUN = 8;   // a stub link runs this much further before it stops
   const CLEAR = 10;     // arrows keep at least this far from screens, labels and notes
   const BEND = 60;      // routing cost of one bend, in px of extra length
-  const SHARED = 4;     // cost multiplier for running on top of an earlier arrow
+  const SHARED = 40;    // cost multiplier for running on top of an earlier arrow; any detour is cheaper
+  const MERGE = 6;      // routing lanes closer than this are one lane
+  const JOG = 30;       // facing ports that differ by up to this much in height are lined up
   const RADIUS = 6;     // corner radius where an arrow bends
 
   // Every kit tag. kit/reference.md documents exactly these; a test checks that the two match.
@@ -400,10 +402,11 @@
 
   // ---------- 5. Arrow routing ----------
   // Boxes are {l, t, r, b} in world px (unscaled), measured from the rendered page.
-  function measure(el) {
-    const o = S.world.getBoundingClientRect(), r = el.getBoundingClientRect(), z = S.zoom;
+  function worldBox(r) {
+    const o = S.world.getBoundingClientRect(), z = S.zoom;
     return { l: (r.left - o.left) / z, t: (r.top - o.top) / z, r: (r.right - o.left) / z, b: (r.bottom - o.top) / z };
   }
+  const measure = (el) => worldBox(el.getBoundingClientRect());
   // A screen's box includes its label above it, so arrows do not run through the label.
   function nodeBox(node) {
     const b = measure(node);
@@ -421,12 +424,38 @@
   const center = (b) => ({ x: (b.l + b.r) / 2, y: (b.t + b.b) / 2 });
   const move = (p, side, d) => { const [dx, dy] = STEP[SIDES.indexOf(side)]; return { x: p.x + dx * d, y: p.y + dy * d }; };
 
+  // A decision has four corners and an arrow can only leave or enter at one, so ends that share a corner
+  // would run on top of each other. Each extra end moves to a free corner, the one that faces its other end
+  // best. An end with `exit` or `enter` set stays where the author put it.
+  function spreadDecisionEnds(ends) {
+    const byDecision = new Map();
+    for (const e of ends.filter((x) => x.el.matches('wf-decision'))) {
+      if (!byDecision.has(e.el)) byDecision.set(e.el, []);
+      byDecision.get(e.el).push(e);
+    }
+    for (const list of byDecision.values()) {
+      const taken = new Set(list.map((e) => e.side));
+      const seen = new Set();
+      for (const e of list) {
+        if (!seen.has(e.side)) { seen.add(e.side); continue; }
+        if (e.fixed) continue;
+        const from = center(e.node), to = center(e.other);
+        const facing = (side) => { const [dx, dy] = STEP[SIDES.indexOf(side)]; return dx * (to.x - from.x) + dy * (to.y - from.y); };
+        const free = SIDES.filter((s) => !taken.has(s)).sort((a, b) => facing(b) - facing(a))[0];
+        if (!free) continue;
+        taken.add(free);
+        e.side = free;
+        e.L[e.key === 'p' ? 'exit' : 'enter'] = free;
+      }
+    }
+  }
+
   // Each link end gets a port on its anchor element (p0) and a point just outside its node (p1).
   // Ends that share an anchor and a side are spread along that side, ordered to avoid crossings.
   // With Screens hidden, the anchor is always the screen itself.
   function placePorts(links) {
     const frames = S.board.classList.contains('hide-screens');
-    const groups = new Map();
+    const groups = new Map(), ends = [];
     for (const L of links) {
       const from = frames ? L.fromNode : L.from, to = frames ? L.toNode : L.to;
       L.A = nodeBox(L.fromNode);
@@ -441,11 +470,14 @@
       if (!L.enterAttr && to !== L.toNode && (L.enter === 'top' || L.enter === 'bottom')) {
         L.enter = center(L.A).x >= center(L.B).x ? 'right' : 'left';
       }
-      for (const end of [{ L, key: 'p', el: from, side: L.exit, node: L.A, other: L.B },
-                         { L, key: 'q', el: to, side: L.enter, node: L.B, other: L.A }]) {
-        if (!groups.has(end.el)) groups.set(end.el, {});
-        (groups.get(end.el)[end.side] ||= []).push(end);
-      }
+      L.ends = [{ L, key: 'p', el: from, side: L.exit, node: L.A, other: L.B, fixed: !!L.exitAttr },
+                { L, key: 'q', el: to, side: L.enter, node: L.B, other: L.A, fixed: !!L.enterAttr }];
+      ends.push(...L.ends);
+    }
+    spreadDecisionEnds(ends);
+    for (const end of ends) {
+      if (!groups.has(end.el)) groups.set(end.el, {});
+      (groups.get(end.el)[end.side] ||= []).push(end);
     }
     for (const bySide of groups.values()) {
       for (const side in bySide) {
@@ -466,15 +498,48 @@
         });
       }
     }
+    straighten(links, groups);
+  }
+
+  // Two facing ports that differ by a few px would make the arrow jog. Move one of them so the arrow
+  // runs straight: an end that is alone on its side, is not a decision corner, and stays clear of the
+  // rounded corners of the box it moves along.
+  function straighten(links, groups) {
+    for (const L of links) {
+      const facing = (L.exit === 'right' && L.enter === 'left') || (L.exit === 'left' && L.enter === 'right');
+      const jog = L.q[0].y - L.p[0].y;
+      if (L.stub || !facing || !jog || Math.abs(jog) > JOG) continue;
+      const movable = (e, y) => {
+        if (e.el.matches('wf-decision') || groups.get(e.el)[e.side].length > 1) return false;
+        const b = measure(e.el);
+        return b.t + 2 * RADIUS * 2 <= y && y <= b.b - 2 * RADIUS * 2;
+      };
+      const [p, q] = L.ends;
+      for (const [e, to] of [[q, L.p[0].y], [p, L.q[0].y]]) {
+        if (!movable(e, to)) continue;
+        e.L[e.key][0].y = to;
+        e.L[e.key][1].y = to;
+        break;
+      }
+    }
   }
 
   // A sparse routing grid: lanes just outside every obstacle, the middle of every gap,
   // every port, and a ring around everything. Nodes inside an obstacle (grown by CLEAR) are closed.
   function makeGrid(obstacles, points) {
     const xs = new Set(), ys = new Set();
-    const lane = 2 * CLEAR;
+    const lane = STUB;   // the lane beside a screen is where ports leave it, so those lanes are one line
     for (const o of obstacles) { xs.add(o.l - lane); xs.add(o.r + lane); ys.add(o.t - lane); ys.add(o.b + lane); }
-    for (const p of points) { xs.add(p.x); ys.add(p.y); }
+    // Ports are fixed. A lane within MERGE of a port or of another lane is dropped: two lines a few px
+    // apart look like one lane, and the router would count them as free.
+    const merged = (lanes, fixed) => {
+      const keep = fixed.map(Math.round);
+      for (const v of [...lanes].map(Math.round).sort((a, b) => a - b)) if (keep.every((k) => Math.abs(k - v) >= MERGE)) keep.push(v);
+      return keep;
+    };
+    const X0 = merged(xs, points.map((p) => p.x)), Y0 = merged(ys, points.map((p) => p.y));
+    xs.clear(); ys.clear();
+    X0.forEach((x) => xs.add(x)); Y0.forEach((y) => ys.add(y));
     const withMidpoints = (set) => {
       const v = [...set].map(Math.round).sort((a, b) => a - b);
       const out = new Set(v);
@@ -718,6 +783,61 @@
   }
 
   // ---------- Checks on the drawn board ----------
+  // A diamond clips nothing, and its text box is the rectangle around the text, so the box test
+  // cannot see a line whose corners poke out. Test each line of text against the diamond itself.
+  function spillsOutOfDiamond(node) {
+    const text = node.querySelector('span');
+    if (!text) return false;
+    const d = measure(node), cx = (d.l + d.r) / 2, cy = (d.t + d.b) / 2, hw = (d.r - d.l) / 2, hh = (d.b - d.t) / 2;
+    const range = document.createRange();
+    range.selectNodeContents(text);
+    return Array.from(range.getClientRects()).map(worldBox).some((r) =>
+      [r.l, r.r].some((x) => [r.t, r.b].some((y) => Math.abs(x - cx) / hw + Math.abs(y - cy) / hh > 1.02)));
+  }
+
+  // Two arrows run along the same lane when parallel segments of different links lie on one line and overlap.
+  const LANE = 2;
+  function sharedLane(s, u) {
+    const horizontal = s.a.y === s.b.y, other = u.a.y === u.b.y;
+    if (horizontal !== other) return false;
+    const [p, q] = [lineBox(s), lineBox(u)];
+    return horizontal
+      ? Math.abs(s.a.y - u.a.y) <= LANE && Math.min(p.r, q.r) - Math.max(p.l, q.l) > 2
+      : Math.abs(s.a.x - u.a.x) <= LANE && Math.min(p.b, q.b) - Math.max(p.t, q.t) > 2;
+  }
+  // A horizontal and a vertical segment cross when each passes through the inside of the other.
+  function crossing(s, u) {
+    const flat = s.a.y === s.b.y, other = u.a.y === u.b.y;
+    if (flat === other) return false;
+    const [h, v] = flat ? [s, u] : [u, s];
+    const between = (x, a, b) => Math.min(a, b) + 1 < x && x < Math.max(a, b) - 1;
+    return between(v.a.x, h.a.x, h.b.x) && between(h.a.y, v.a.y, v.b.y);
+  }
+
+  function checkArrows(add, notes) {
+    const lines = S.links.map((L) => ({ L, segs: L.parts.flatMap((p) => segments(p.points)) }));
+    for (const { L, segs } of lines) {
+      const hit = new Set();
+      for (const { el, box } of notes) {
+        const inner = { l: box.l + 1, r: box.r - 1, t: box.t + 1, b: box.b - 1 };
+        if (segs.some((s) => overlaps(lineBox(s), inner))) hit.add(el);
+      }
+      for (const el of hit) {
+        const text = el.textContent.trim().replace(/\s+/g, ' ');
+        add('error', 'arrow-crosses-note', `${L.tag}: arrow crosses the ${el.localName.slice(3)} "${text.length > 36 ? `${text.slice(0, 35)}...` : text}"`);
+      }
+    }
+    for (let i = 0; i < lines.length; i++) {
+      for (let k = i + 1; k < lines.length; k++) {
+        const a = lines[i], b = lines[k];
+        const pairs = a.segs.flatMap((s) => b.segs.map((u) => [s, u]));
+        const pair = `${a.L.tag} and ${b.L.tag}`;
+        if (pairs.some(([s, u]) => sharedLane(s, u))) add('error', 'arrow-overlap', `${pair}: the arrows run along the same lane`);
+        else if (pairs.some(([s, u]) => crossing(s, u))) add('warn', 'arrow-crosses-arrow', `${pair}: the arrows cross`);
+      }
+    }
+  }
+
   function checkGeometry() {
     const P = [];
     const add = (level, code, message) => P.push({ level, code, message });
@@ -747,6 +867,9 @@
         const what = o.el === node ? 'the content' : `<${o.el.localName}>`;
         add('error', 'overflow', `${node.localName.slice(3)} ${node.id || nameOf(node)}: ${what} overflows by ${Math.round(o.by)}px`);
       }
+      if (node.matches('wf-decision') && spillsOutOfDiamond(node)) {
+        add('error', 'overflow', `decision ${node.id || nameOf(node)}: the text spills out of the diamond; shorten the name`);
+      }
     }
 
     for (const L of S.links) {
@@ -765,11 +888,13 @@
       for (const n of crossed) add('error', 'arrow-crosses-screen', `${L.tag}: arrow crosses ${n.localName.slice(3)} ${n.id || nameOf(n)}`);
     }
 
+    const notes = $$('wf-note, wf-question', S.world).map((el) => ({ el, box: measure(el) }));
+    checkArrows(add, notes);
+
     const labels = S.links.flatMap((L) => L.parts.filter((p) => p.labelEl).map((p) => ({ L, el: p.labelEl, r: measure(p.labelEl) })));
-    const notes = $$('wf-note, wf-question', S.world).map(measure);
     labels.forEach((a, i) => {
       const what = labels.slice(i + 1).some((b) => overlaps(a.r, b.r)) ? 'another label'
-        : notes.some((n) => overlaps(a.r, n)) ? 'a note' : null;
+        : notes.some((n) => overlaps(a.r, n.box)) ? 'a note' : null;
       if (what) add('warn', 'label-overlap', `${a.L.tag}: label "${a.el.textContent}" overlaps ${what}`);
     });
     S.geo = P;

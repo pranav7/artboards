@@ -29,7 +29,9 @@ what each screen shows.
 6. **Check.** Run `artboards check` until it shows 0 errors. Read the warnings, and fix
    the ones that are real.
 7. **Look.** Run `artboards shot` on the board. Run it again with `#journey=N` for two of
-   the journeys. Open the PNGs and look at them.
+   the journeys. Open the PNGs and look at them. A clean check does not mean a clean
+   layout: render the board wide (`--width 2400`) and look at close-ups of each decision
+   and of each place where arrows meet.
 8. **Hand over.** Give the user the URL, the list of journeys, and the open questions. Set
    the state to `open` while questions remain.
 9. **After agreement.** Set the state to `agreed`. Then draw hi-fi artboards for the
@@ -66,8 +68,21 @@ For a complete board, see `examples/tool-library/1-Tool-library.html` in the rep
 - Make each id unique across the whole board.
 - Do not set pixel positions. Put screens on the grid of their region with `col` and
   `row`.
-- Use a stub link only when the default is wrong. The kit draws a link between regions
-  that are not next to each other as two short stubs.
+- The kit draws a link between regions that are not next to each other as two short stubs.
+  Give a link `stub` yourself when it jumps far or runs backward inside or between
+  neighbouring regions. A full arrow that crosses most of a region shares lanes with other
+  arrows. Two stubs ("to Target" and "from Source") stay short.
+- A control inside a screen, such as a button in a modal, can only leave sideways. When the
+  target is above or below, the arrow loops around the side of the screen. Draw the link
+  from the screen instead: its bottom edge to the next screen's top edge is a short
+  straight arrow.
+- Keep the name of a decision short: about 3 words, such as "Papers found?". A long
+  question does not fit the diamond.
+- Keep notes out of the path of arrows. A `wf-note` sits under its screen, so an arrow that
+  leaves the bottom of that screen runs through the text. Leave from the side, or put the
+  note on the other side with `col` and `row`.
+- A decision has four corners. When more than two arrows meet at it, give each its own
+  corner with `exit` and `enter`.
 - Keep the board grayscale. The kit uses blue for the journey highlight and red for open
   questions. Do not add other colours.
 
@@ -90,10 +105,13 @@ error  link home-search -> serach: no element has id "serach"
 | `ambiguous-step` | error | Two links join a pair of steps, and the step does not name one with `@` |
 | `cell-taken` | error | Two items in one region have the same `col` and `row` |
 | `overlap` | error | Two screens overlap |
-| `overflow` | error | Text is too long for its part or its screen |
+| `overflow` | error | Text is too long for its part or its screen, or the name of a decision spills out of its diamond |
 | `arrow-crosses-screen` | error | An arrow goes through a screen that is not one of its ends |
+| `arrow-crosses-note` | error | An arrow goes through a note or a question |
+| `arrow-overlap` | error | Two arrows run along the same lane, so they look like one arrow |
 | `console-error` | error | The page has a script error |
 | `kit-error` | error | The kit failed while it drew the board |
+| `arrow-crosses-arrow` | warn | Two arrows cross. Some crossings cannot be avoided; look at each one |
 | `label-overlap` | warn | An arrow label covers another label or a note |
 | `unreached-screen` | warn | No link goes to or from a screen |
 | `screen-not-in-journey` | warn | No journey uses a screen |
