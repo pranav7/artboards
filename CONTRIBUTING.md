@@ -14,9 +14,12 @@ This file is for people who change the tool. To use it, see the [README](README.
 | `artboards archive <key>` | Closes a group by hand |
 | `artboards activate <key>` | Opens a closed group again, and keeps tidy from closing it |
 | `artboards tidy [--dry-run]` | Closes and removes groups by the tidy rules. `--dry-run` prints the actions and changes nothing |
-| `artboards guide [lofi\|hifi]` | Prints the tag reference for the lo-fi kit, or the hi-fi guide |
+| `artboards guide [lofi\|hifi\|clickthrough]` | Prints the tag reference for the lo-fi kit, or the hi-fi or click-through guide |
 | `artboards check <file>...` | Opens each artboard in a headless browser and prints its problems. Exits with 1 if there is an error |
 | `artboards shot <file>[#journey=N] [--dark] [--width W] [-o out.png]` | Saves a full-page PNG. The default width is 1600 |
+| `artboards shot <file>[#step=ID] [--all-steps] [-o out]` | For a click-through: saves a PNG at the size that shows the frame at 100%. `--all-steps` saves one PNG for each step, in the folder that `-o` names |
+| `artboards capture <url> -o <file> [options]` | Saves one state of a running app as a self-contained HTML snapshot, and a PNG next to it. `skills/artboard/clickthrough.md` lists the options |
+| `artboards compose <snapshot>... -o <file> [--title T] [--add]` | Writes a click-through with one step for each snapshot. `--add` appends the steps to a click-through |
 | `artboards export <file> [-o out.html]` | Writes one self-contained HTML file with the kit inlined, to send to someone |
 | `artboards test [args]` | Runs the tests |
 
@@ -39,11 +42,16 @@ Two environment variables change the defaults:
    into wireframes, lays out the regions on a grid, routes the arrows, and builds the
    journey panel. It also gives `window.wf.problems()`, a list of the problems that it
    found.
+
+   A click-through loads `/_kit/clickthrough.css` and `/_kit/clickthrough.js`. The kit
+   shows the app's markup for one step at a time in an iframe of the frame size, builds the
+   step panel, and goes to a step on a click on a `data-go` element. `window.ct.problems()`
+   returns a promise: the kit shows each step in a hidden iframe to measure it.
 4. `artboards check` opens the file in Chromium with Playwright. It sends `/_kit/`
    requests to the `kit` folder, so the check works without the server. For a lo-fi
-   board, it waits for `wf.ready` and reads `wf.problems()`. For a hi-fi artboard, it
-   runs generic checks: script errors, dark-only tokens, a transparent body, and text
-   overflow.
+   board, it waits for `wf.ready` and reads `wf.problems()`. For a click-through, it waits
+   for `ct.ready` and reads `ct.problems()`. For a hi-fi artboard, it runs generic checks:
+   script errors, dark-only tokens, a transparent body, and text overflow.
 5. `artboards serve` serves the data folder and the kit on `127.0.0.1`. It makes the
    review queue (`/`) and the history (`/history`) from `meta.json` on each request. The
    **Archive** and **Reopen** buttons post to `/_api/archive/<key>` and `/_api/reopen/<key>`.
@@ -70,23 +78,35 @@ Two environment variables change the defaults:
 | `src/artboards/tidy.py` | The tidy rules |
 | `src/artboards/server.py` | The HTTP server |
 | `src/artboards/browser.py` | Playwright: `check`, `shot`, `export`, and the browser test in `doctor` |
+| `src/artboards/capture.py` | Playwright: `capture`, a self-contained snapshot of a running app |
+| `src/artboards/compose.py` | `compose`: a click-through from snapshots |
 | `src/artboards/cli.py` | The command-line interface |
 | `kit/lofi.js`, `kit/lofi.css` | The lo-fi kit |
 | `kit/reference.md` | The tag reference that `artboards guide lofi` prints |
+| `kit/clickthrough.js`, `kit/clickthrough.css` | The click-through kit |
 | `skills/artboard/SKILL.md` | The skill for agents |
-| `skills/artboard/lofi.md`, `skills/artboard/hifi.md` | The guide for each mode |
+| `skills/artboard/lofi.md`, `hifi.md`, `clickthrough.md` | The guide for each mode. `clickthrough.md` is also the tag reference of the click-through kit |
 | `examples/tool-library/` | The example group |
-| `tests/fixtures/` | Boards that each break one check |
+| `tests/fixtures/` | Boards and click-throughs that each break one check |
 
-To add a tag to the kit:
+To add a tag to the lo-fi kit:
 
 1. Add the tag to the registry in `kit/lofi.js`.
 2. Add a line for it to `kit/reference.md`. A test compares the tags in the two files, and
    fails if they are different.
 3. Use the tag in `tests/fixtures/lofi-clean.html`, so the check tests cover it.
 
-To add a check to the kit, give it a code in kebab case, add it to `wf.problems()`, and add
-a fixture `tests/fixtures/lofi-<code>.html` that causes only that code.
+To add a tag to the click-through kit:
+
+1. Add the tag to `TAGS` and `PARENT` in `kit/clickthrough.js`.
+2. Add a row for it to the tag table in `skills/artboard/clickthrough.md`. A test compares
+   the tags in the two files.
+3. Use the tag in `tests/fixtures/ct-clean.html`.
+
+To add a check to a kit, give it a code in kebab case, and add it to `wf.problems()` or
+`ct.problems()`. Add a fixture `tests/fixtures/lofi-<code>.html` or
+`tests/fixtures/ct-<code>.html` that causes only that code. Then add the code to the list in
+`tests/test_browser.py` or `tests/test_clickthrough.py`.
 
 Run `artboards test` before you commit.
 

@@ -19,6 +19,12 @@
       "title": "2 - the tool page",
       "state": "open",
       "note": "Details screen \"tool\" from the journey board. Open: does the page pick the next free weekend, or wait for the member to pick dates?"
+    },
+    {
+      "file": "3-Borrow-click-through.html",
+      "title": "3 - borrowing a tool, click-through",
+      "state": "open",
+      "note": "Six steps from search to the Borrowed tab, with a branch for a booked day. Open: does the owner approve each request, and does the sheet offer the waitlist?"
     }
   ],
   "closed": {

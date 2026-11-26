@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Breaks missing-step</title>
+<link rel="stylesheet" href="/_kit/clickthrough.css">
+<script src="/_kit/clickthrough.js"></script>
+</head>
+<body>
+<ct-flow name="Breaks missing-step" width="640" height="400">
+  <template ct-head>
+    <style>body { margin: 0; font: 14px/1.4 sans-serif; background: #fff; } .btn { margin: 16px; }</style>
+  </template>
+
+  <ct-step id="1" name="Start">
+    <ct-hint>Click <ct-control>Next</ct-control>.</ct-hint>
+    <template><button class="btn" data-go="2">Next</button><button class="btn" data-go="9">Nowhere</button></template>
+  </ct-step>
+
+  <ct-step id="2" name="Done">
+    <ct-hint>This is the last step.</ct-hint>
+    <template><p>Done.</p></template>
+  </ct-step>
+</ct-flow>
+</body>
+</html>

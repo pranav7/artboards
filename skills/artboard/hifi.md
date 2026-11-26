@@ -13,6 +13,9 @@ For an example, see `examples/tool-library/2-Tool-page.html` in the repository.
   product that has one.
 - Draw at the real width of the screen: 390px for a phone, the real pane width for a
   desktop app.
+- To see a real screen of a running app, run
+  `artboards capture <url> -o $DIR/screens/<name>.html`. Open the PNG that it saves next to
+  the snapshot. For the options, see [clickthrough.md](clickthrough.md#capture).
 - If a lo-fi board exists, read the screen that you detail. Use its copy, and keep its
   open questions open.
 
@@ -33,8 +36,8 @@ For an example, see `examples/tool-library/2-Tool-page.html` in the repository.
 ## The layout of an artboard
 
 1. A heading and one paragraph of context: which screen, which state, and the width.
-2. When you change an existing screen: "Today" and "Proposed", side by side or one above
-   the other. Draw "Today" from the real product, not from memory.
+2. When you change a screen that the product has: "Today" and "Proposed", side by side or
+   one above the other. Draw "Today" from the real product, not from memory.
 3. Numbered callouts on the "Proposed" drawing, in one accent colour. Each number
    matches a numbered note next to or under the drawing. A note says what changed and
    why, in one or two sentences.

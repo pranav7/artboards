@@ -2,7 +2,8 @@
 
 Your coding agent draws the design as local HTML files, and you review it in the browser
 on localhost. First a rough journey board to agree the flow, then real-looking screens to
-agree the look.
+agree the look. For a change across several screens of a running product, the agent can
+also capture the real screens and build a click-through that you click like the product.
 
 A design is easier to agree before it is built. With this tool, the agent draws each round
 in a minute, you reload a URL, and you send back notes or an annotated screenshot. It runs
@@ -24,6 +25,15 @@ After the flow is agreed, the agent draws the screens where the look matters as 
 artboards, with numbered notes:
 
 ![The tool page for a cordless drill, drawn on a phone, with four numbered notes](examples/tool-library/2-Tool-page.png)
+
+For a flow that you must click through to judge, the agent builds a click-through. The app
+renders at its real size in a frame. You click its controls to go from step to step, and a
+side panel says what to click next, what is new, and what is not decided:
+
+![A phone screen with a sheet to pick dates, a blue ring on the button to click next, and a panel that lists six steps](examples/tool-library/3-Borrow-click-through.png)
+
+In a real project, `artboards capture` saves each screen of the running app with its CSS,
+images and fonts, and `artboards compose` turns the screens into the steps.
 
 The files are in [examples/tool-library](examples/tool-library).
 

@@ -2,7 +2,9 @@
 
 A board opens by file:// URL; requests for /_kit/<file> are answered from kit/, so these
 commands work on a board anywhere on disk, with or without the server.
-Only this module imports Playwright, and only inside functions.
+Three kinds of artboard: a lo-fi board (<wf-board>, kit global window.wf), a click-through
+(<ct-flow>, kit global window.ct), and a hi-fi page, which has no kit.
+Only this module and capture.py import Playwright, and only inside functions.
 """
 import contextlib
 import pathlib
@@ -13,7 +15,12 @@ from . import paths
 
 LEVELS = ("error", "warn", "info")
 READY_TIMEOUT_MS = 15000
+PROBLEMS_TIMEOUT_MS = 60000
+SETTLE_TIMEOUT_MS = 5000
 SHOT_HEIGHT = 1100
+# The root tag of each kit, the global that the kit sets, and the name of the kit in messages.
+KITS = {"wf-board": "wf", "ct-flow": "ct"}
+KIT_NAMES = {"wf": "lo-fi", "ct": "click-through"}
 KIT_REF = re.compile(r"""(?:src|href)\s*=\s*["']?/_kit/""", re.I)
 
 # Generic checks for a hi-fi page (no wf-board). Returns problems in the kit's shape.
@@ -103,7 +110,7 @@ def route_kit(route):
 def open_page(browser, path, hash="", dark=False, width=1600, route=True, errors=None):
     """A new page with the board loaded. Console errors and page errors go into `errors`."""
     page = browser.new_page(viewport={"width": width, "height": SHOT_HEIGHT},
-                            color_scheme="dark" if dark else "light")
+                            color_scheme="dark" if dark else "light", reduced_motion="reduce")
     if errors is not None:
         page.on("console", lambda msg: msg.type == "error" and errors.append(f"console: {msg.text}"))
         page.on("pageerror", lambda exc: errors.append(f"page error: {exc}"))
@@ -114,18 +121,21 @@ def open_page(browser, path, hash="", dark=False, width=1600, route=True, errors
     return page
 
 
-def is_board(page):
-    return page.evaluate("() => !!document.querySelector('wf-board')")
-
-
-def wait_ready(page):
-    """True when wf.ready resolved in time. False when the kit is missing or too slow."""
+def kit_of(page):
+    """The global of the kit that draws the page: 'wf' or 'ct'. None for a hi-fi page."""
     return page.evaluate(
-        """ms => (window.wf && window.wf.ready)
-              ? Promise.race([Promise.resolve(window.wf.ready).then(() => true),
+        "kits => { const tag = Object.keys(kits).find((t) => document.querySelector(t)); return tag ? kits[tag] : null; }",
+        KITS)
+
+
+def wait_ready(page, kit):
+    """True when the kit's ready resolved in time. False when the kit is missing or too slow."""
+    return page.evaluate(
+        """([kit, ms]) => (window[kit] && window[kit].ready)
+              ? Promise.race([Promise.resolve(window[kit].ready).then(() => true),
                               new Promise(r => setTimeout(() => r(false), ms))])
               : false""",
-        READY_TIMEOUT_MS,
+        [kit, READY_TIMEOUT_MS],
     )
 
 
@@ -140,15 +150,20 @@ def normalize(raw):
     return out
 
 
-def kit_problems(page):
-    """wf.problems() once wf.ready resolves. A kit that fails or hangs is one error."""
+def kit_problems(page, kit):
+    """The kit's problems() once its ready resolves. problems() may return a promise.
+    A kit that fails or hangs is one error."""
     from playwright.sync_api import Error
 
     try:
-        if not wait_ready(page):
+        if not wait_ready(page, kit):
             return [{"level": "error", "code": "not-ready",
-                     "message": f"wf.ready did not resolve in {READY_TIMEOUT_MS // 1000} s"}]
-        return normalize(page.evaluate("() => window.wf.problems()"))
+                     "message": f"{kit}.ready did not resolve in {READY_TIMEOUT_MS // 1000} s"}]
+        return normalize(page.evaluate(
+            """([kit, ms]) => Promise.race([
+                 Promise.resolve(window[kit].problems()),
+                 new Promise((_, no) => setTimeout(() => no(new Error(`problems() did not finish in ${ms / 1000} s`)), ms))])""",
+            [kit, PROBLEMS_TIMEOUT_MS]))
     except Error as exc:
         return [{"level": "error", "code": "kit-error", "message": f"the kit failed: {exc.message.splitlines()[0]}"}]
 
@@ -158,18 +173,18 @@ def check_page(browser, path, route=True):
     errors = []
     page = open_page(browser, path, route=route, errors=errors)
     try:
-        if is_board(page):
-            has_kit = page.evaluate("() => !!(window.wf && window.wf.ready && window.wf.problems)")
-            if not has_kit:
-                problems = [{"level": "error", "code": "kit-missing",
-                             "message": "the lo-fi kit did not load: window.wf is missing"}]
-            else:
-                problems = kit_problems(page)
-        else:
+        kit = kit_of(page)
+        if kit is None:
             problems = normalize(page.evaluate(HIFI_CHECKS))
+        elif not page.evaluate("k => !!(window[k] && window[k].ready && window[k].problems)", kit):
+            problems = [{"level": "error", "code": "kit-missing",
+                         "message": f"the {KIT_NAMES[kit]} kit did not load: window.{kit} is missing"}]
+        else:
+            problems = kit_problems(page, kit)
     finally:
         page.close()
-    problems += [{"level": "error", "code": "console-error", "message": e} for e in errors]
+    # A failure repeats each time a click-through renders a step; report each message once.
+    problems += [{"level": "error", "code": "console-error", "message": e} for e in dict.fromkeys(errors)]
     return sorted(problems, key=lambda p: LEVELS.index(p["level"]))
 
 
@@ -201,8 +216,26 @@ def shot_path(path, hash, dark):
     return path.with_name(f"{path.stem}{suffix}.png")
 
 
+def settle(page):
+    """Wait up to 5 s for the running CSS transitions and finite animations to end. A pinned
+    journey fades the other screens with a transition; shoot the end state. A looping or a
+    paused animation does not end, so do not wait for it."""
+    page.evaluate("""ms => Promise.race([
+        Promise.all(document.getAnimations()
+            .filter((a) => a.playState === 'running' && a.effect && a.effect.getComputedTiming().endTime !== Infinity)
+            .map((a) => a.finished.catch(() => {}))),
+        new Promise((resolve) => setTimeout(resolve, ms))])""", SETTLE_TIMEOUT_MS)
+
+
+def show_frame_at_full_size(page):
+    """Size the viewport so the frame of a click-through shows at 100%, then let the kit settle."""
+    page.set_viewport_size(page.evaluate("() => window.ct.size"))
+    page.evaluate("() => window.ct.go(window.ct.current)")
+
+
 def shot(spec, dark=False, width=1600, out=None, browser=None):
-    """Full-page PNG of a board. Returns the PNG path."""
+    """Full-page PNG of a board. A click-through is shot at the size that shows its frame at
+    100%, on the step that #step=<id> names. Returns the PNG path."""
     path, hash = split_hash(spec)
     if not path.is_file():
         raise FileNotFoundError(f"no such file: {path}")
@@ -210,16 +243,52 @@ def shot(spec, dark=False, width=1600, out=None, browser=None):
     with chromium(browser) as b:
         page = open_page(b, path, hash=hash, dark=dark, width=width)
         try:
-            if is_board(page):
-                wait_ready(page)
+            kit = kit_of(page)
+            if kit:
+                wait_ready(page, kit)
             else:
                 page.wait_for_timeout(500)
-            # A pinned journey fades the other screens with a CSS transition; shoot the end state.
-            page.evaluate("() => Promise.all(document.getAnimations().map((a) => a.finished))")
-            page.screenshot(path=str(out), full_page=True)
+            if kit == "ct":
+                step = re.fullmatch(r"step=(.+)", hash)
+                if step and unquote(step.group(1)) not in page.evaluate("() => window.ct.steps"):
+                    raise ValueError(f"{path.name} has no step {unquote(step.group(1))!r}")
+                show_frame_at_full_size(page)
+            settle(page)
+            page.screenshot(path=str(out), full_page=True, animations="disabled")
         finally:
             page.close()
     return out
+
+
+def shot_steps(file, dark=False, out_dir=None, browser=None):
+    """One full-page PNG for each step of a click-through, named like `shot file#step=<id>`.
+    The PNGs go in out_dir, or next to the file. Returns the PNG paths in step order."""
+    path = pathlib.Path(file)
+    if not path.is_file():
+        raise FileNotFoundError(f"no such file: {path}")
+    folder = pathlib.Path(out_dir) if out_dir else path.parent
+    folder.mkdir(parents=True, exist_ok=True)
+    outs = []
+    with chromium(browser) as b:
+        page = open_page(b, path, dark=dark)
+        try:
+            if kit_of(page) != "ct":
+                raise ValueError(f"{path.name} is not a click-through: it has no <ct-flow>")
+            wait_ready(page, "ct")
+            steps = page.evaluate("() => window.ct.steps")
+            names = [shot_path(path, f"step={step}", dark).name for step in steps]
+            same = sorted({name for name in names if names.count(name) > 1})
+            if same:
+                raise ValueError(f"two steps get the file name {same[0]}: give them ids that differ in a letter or a digit")
+            show_frame_at_full_size(page)
+            for step, name in zip(steps, names):
+                page.evaluate("id => window.ct.go(id)", step)
+                settle(page)
+                page.screenshot(path=str(folder / name), full_page=True, animations="disabled")
+                outs.append(folder / name)
+        finally:
+            page.close()
+    return outs
 
 
 def inline_kit(text):

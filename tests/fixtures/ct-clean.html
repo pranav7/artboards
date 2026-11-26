@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Clean click-through</title>
+<link rel="stylesheet" href="/_kit/clickthrough.css">
+<script src="/_kit/clickthrough.js"></script>
+</head>
+<body>
+<ct-flow name="Reading list: save a book" width="640" height="400">
+  <ct-intro><p>A small flow with every kit tag in use.</p></ct-intro>
+
+  <template ct-head>
+    <ct-html class="theme-light"></ct-html>
+    <ct-body class="app"></ct-body>
+    <style>
+      :root { --ink: #222; --line: #ddd; }
+      .theme-light body.app { margin: 0; font: 14px/1.4 sans-serif; color: var(--ink); background: #fff; }
+      .bar { height: 48px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid var(--line); }
+      .list { height: 300px; overflow: auto; }
+      .row { height: 40px; padding: 0 16px; display: flex; align-items: center; border-bottom: 1px solid var(--line); }
+      .btn { height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+      .toast { position: fixed; right: 16px; bottom: 16px; padding: 8px 12px; border-radius: 6px; background: #222; color: #fff; }
+    </style>
+  </template>
+
+  <ct-step id="1" name="Book list">
+    <ct-hint>Click <ct-control>Dune</ct-control>.</ct-hint>
+    <ct-new>Nothing yet. This is the list today.</ct-new>
+    <template>
+      <div class="bar">Books <input class="search" placeholder="Search books"></div>
+      <div class="list" data-scroll-top="20">
+        <div class="row">Emma</div>
+        <div class="row" data-go="2" data-control="Dune">Dune, Frank Herbert</div>
+        <div class="row">Ulysses</div>
+        <div class="row">Walden</div>
+        <div class="row">Beloved</div>
+        <div class="row">Middlemarch</div>
+        <div class="row">Persuasion</div>
+        <div class="row">Rebecca</div>
+      </div>
+    </template>
+  </ct-step>
+
+  <ct-step id="2" name="Book page" new>
+    <ct-hint>Click <ct-control>Save</ct-control>, or <ct-control>Save for later</ct-control>.</ct-hint>
+    <ct-new>Two ways to save.</ct-new>
+    <ct-question>Is "Save for later" a second list, or a tag?</ct-question>
+    <template>
+      <div class="bar"><a href="/books" data-go="1">Books</a>&nbsp;/ Dune</div>
+      <p style="padding: 0 16px">Dune, Frank Herbert. 1965.</p>
+      <p style="padding: 0 16px">
+        <button class="btn" data-go="3">Save</button>
+        <button class="btn" data-go="2b">Save for later</button>
+      </p>
+    </template>
+  </ct-step>
+
+  <ct-step id="2b" name="Saved for later" branch new base="2">
+    <ct-hint>A side branch. Click <ct-control>Done</ct-control>.</ct-hint>
+    <ct-new>A toast confirms the save.</ct-new>
+    <ct-note>The toast stays for 4 seconds.</ct-note>
+    <template>
+      <div class="toast">Saved for later. <button class="btn" data-go="3">Done</button></div>
+    </template>
+  </ct-step>
+
+  <ct-step id="3" name="Saved">
+    <ct-hint>This is the last step. Click Restart to go again.</ct-hint>
+    <ct-new>The book is in the list.</ct-new>
+    <template>
+      <div class="bar">Books</div>
+      <div class="row">Dune, saved</div>
+    </template>
+  </ct-step>
+</ct-flow>
+</body>
+</html>
