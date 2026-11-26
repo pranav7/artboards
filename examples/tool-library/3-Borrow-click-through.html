@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>3 - Borrow a tool, click-through</title>
+<link rel="stylesheet" href="/_kit/clickthrough.css">
+<script src="/_kit/clickthrough.js"></script>
+</head>
+<body>
+<ct-flow name="Borrow a tool this weekend" width="390" height="844">
+  <ct-intro>
+    <p>The journey "Borrow a tool this weekend" from the journey board, in the look of the tool page.
+    Click the controls in the phone. A blue ring marks the control to click next.</p>
+  </ct-intro>
+
+  <!-- The app's own CSS. In a real project this comes from `artboards capture`. -->
+  <template ct-head>
+    <ct-html lang="en"></ct-html>
+    <ct-body class="app"></ct-body>
+    <style>
+      :root {
+        --screen: #ffffff; --ink: #1c1b19; --muted: #7a776f; --faint: #b3afa5; --line: #e9e6df;
+        --chip: #f5f3ee; --accent: #2f6b4f; --on-accent: #ffffff; --accent-soft: #e3efe7;
+        --booked: #efece6; --booked-ink: #a8a397; --scrim: rgba(28, 27, 25, 0.4);
+      }
+      * { box-sizing: border-box; }
+      body.app { margin: 0; background: var(--screen); color: var(--ink); line-height: 1.45;
+        font: 15px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+      .i { display: block; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .screen { display: flex; flex-direction: column; height: 100vh; }
+      .status { display: flex; justify-content: space-between; align-items: center; height: 48px; padding: 0 28px; font-weight: 600; flex: none; }
+      .status .bar { width: 26px; height: 12px; border: 1.5px solid var(--ink); border-radius: 4px; }
+      .topbar { display: flex; align-items: center; justify-content: space-between; height: 48px; padding: 0 8px; flex: none; }
+      .tb-title { font-weight: 600; }
+      .ib { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 20px; background: none; color: inherit; padding: 0; }
+      .scroll { flex: 1; overflow: auto; }
+      .search { display: flex; align-items: center; gap: 8px; margin: 4px 16px 12px; height: 44px; padding: 0 14px; border-radius: 22px; background: var(--chip); color: var(--muted); }
+      .search b { color: var(--ink); font-weight: 500; }
+      .meta-line { margin: 0 20px 4px; color: var(--muted); font-size: 13px; }
+      .row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--line); }
+      .thumb { width: 48px; height: 48px; flex: none; border-radius: 12px; background: var(--accent-soft); }
+      .row .who { flex: 1; min-width: 0; }
+      .row b, .owner b { display: block; font-weight: 600; }
+      .row small, .owner small, .fact small { display: block; color: var(--muted); font-size: 13px; }
+      .badge { padding: 2px 10px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; }
+      .badge.out { background: var(--booked); color: var(--booked-ink); }
+      .photo { position: relative; height: 200px; margin: 0 16px; border-radius: 18px; background: linear-gradient(160deg, #e6efe8, #d3e3d7); }
+      .photo .count { position: absolute; right: 12px; bottom: 12px; padding: 2px 9px; border-radius: 12px; background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 12px; }
+      .name { margin: 14px 20px 0; font-size: 22px; letter-spacing: -0.01em; }
+      .sub { margin: 2px 20px 0; color: var(--muted); font-size: 14px; }
+      .owner { display: flex; align-items: center; gap: 12px; margin: 14px 20px 0; padding: 12px; border: 1px solid var(--line); border-radius: 14px; }
+      .avatar { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 20px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 14px; }
+      .facts { display: flex; gap: 8px; margin: 14px 20px 0; }
+      .fact { flex: 1; padding: 9px 12px; border-radius: 12px; background: var(--chip); }
+      .fact b { display: block; font-weight: 600; }
+      .h { margin: 18px 20px 8px; font-size: 15px; }
+      .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 0 20px 16px; }
+      .day { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 54px; border: 1px solid var(--line); border-radius: 12px; }
+      .day small { color: var(--muted); font-size: 11px; }
+      .day b { font-size: 15px; }
+      .day.pick { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+      .day.pick small { color: var(--on-accent); }
+      .day.out { border-color: transparent; background: var(--booked); color: var(--booked-ink); }
+      .day.out b { text-decoration: line-through; font-weight: 500; }
+      .day.out.pick { border-color: #b42318; background: var(--booked); color: #b42318; }
+      .day.out.pick small { color: #b42318; }
+      .borrowbar { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--line); flex: none; }
+      .borrowbar .when { flex: 1; }
+      .borrowbar b { display: block; font-weight: 600; }
+      .borrowbar small { color: var(--muted); font-size: 13px; }
+      .btn { height: 48px; padding: 0 24px; border: 0; border-radius: 24px; background: var(--accent); color: var(--on-accent); font: inherit; font-weight: 600; }
+      .btn.wide { display: block; width: calc(100% - 40px); margin: 0 20px; }
+      .btn.ghost { background: var(--chip); color: var(--ink); }
+      .tabbar { display: flex; height: 82px; padding-top: 8px; border-top: 1px solid var(--line); flex: none; }
+      .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--faint); font-size: 11px; font-weight: 500; }
+      .tab.on { color: var(--ink); }
+      .scrim { position: fixed; inset: 0; background: var(--scrim); }
+      .sheet { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 0 28px; border-radius: 22px 22px 0 0; background: var(--screen); }
+      .grip { width: 40px; height: 5px; margin: 0 auto 10px; border-radius: 3px; background: var(--line); }
+      .sheet-title { margin: 0 20px 4px; font-size: 18px; }
+      .field { margin: 12px 20px 0; }
+      .field label { display: block; margin-bottom: 4px; color: var(--muted); font-size: 13px; }
+      .field textarea { display: block; width: 100%; height: 64px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; font: inherit; resize: none; }
+      .check { display: flex; align-items: center; gap: 10px; margin: 12px 20px 0; }
+      .check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+      .warn { margin: 4px 20px 0; padding: 10px 12px; border-radius: 12px; background: #fdeeec; color: #8a1c12; font-size: 14px; }
+      .sheet .btn.wide { margin-top: 16px; }
+      .done { padding: 24px 20px 0; }
+      .done h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: -0.01em; }
+      .done p { margin: 0 0 16px; color: var(--muted); }
+      .card { margin: 0 20px 16px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; }
+      .card b { display: block; }
+      .card small { color: var(--muted); font-size: 13px; }
+      .stack .btn { margin-bottom: 10px; }
+      .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); padding: 10px 16px; border-radius: 22px; background: var(--ink); color: var(--screen); font-size: 14px; white-space: nowrap; }
+      .segment { display: flex; gap: 6px; margin: 4px 20px 12px; }
+      .segment span { padding: 6px 14px; border-radius: 16px; background: var(--chip); font-size: 14px; }
+      .segment span.on { background: var(--ink); color: var(--screen); }
+      .wait { color: #9a6b00; }
+    </style>
+  </template>
+
+  <ct-step id="1" name="Search results">
+    <ct-hint>Click <ct-control>Cordless drill 18V</ct-control>.</ct-hint>
+    <ct-new>Nothing yet. This is search today, sorted by walking distance.</ct-new>
+    <template>
+      <div class="screen">
+        <div class="status"><span>9:41</span><span class="bar"></span></div>
+        <div class="topbar"><span class="ib"></span><span class="tb-title">Search</span><span class="ib"></span></div>
+        <div class="search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><b>drill</b></div>
+        <p class="meta-line">6 tools within 1 km</p>
+        <div class="scroll">
+          <div class="row" data-go="2" data-control="Cordless drill 18V"><span class="thumb"></span><span class="who"><b>Cordless drill 18V</b><small>Maya Chen, 120 m</small></span><span class="badge">Free</span></div>
+          <div class="row"><span class="thumb"></span><span class="who"><b>Hammer drill</b><small>Tom Okafor, 300 m</small></span><span class="badge out">Out</span></div>
+          <div class="row"><span class="thumb"></span><span class="who"><b>Drill bit set</b><small>Ana Lopes, 600 m</small></span><span class="badge">Free</span></div>
+          <div class="row"><span class="thumb"></span><span class="who"><b>Drill press</b><small>Community hall, 900 m</small></span><span class="badge">Free</span></div>
+        </div>
+        <nav class="tabbar"><span class="tab"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>Home</span><span class="tab on"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Search</span><span class="tab" data-go="5"><svg class="i" viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8"/></svg>Borrowed</span><span class="tab"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>Messages</span><span class="tab"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Profile</span></nav>
+      </div>
+    </template>
+  </ct-step>
+
+  <ct-step id="2" name="Tool page" new>
+    <ct-hint>Click <ct-control>Borrow</ct-control>.</ct-hint>
+    <ct-new>The page picks the next free weekend, so Borrow has dates before the member taps anything.</ct-new>
+    <ct-note>Detailed on the hi-fi artboard 2-Tool-page.html.</ct-note>
+    <template>
+      <div class="screen">
+        <div class="status"><span>9:41</span><span class="bar"></span></div>
+        <div class="topbar"><button class="ib" data-go="1" aria-label="Back to search"><svg class="i" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><span class="tb-title">Cordless drill 18V</span><span class="ib"></span></div>
+        <div class="scroll">
+          <div class="photo" role="img" aria-label="Photo of the drill"><span class="count">1 / 4</span></div>
+          <h1 class="name">Cordless drill 18V</h1>
+          <p class="sub">2 batteries, charger and a box of 12 bits</p>
+          <div class="owner"><span class="avatar">MC</span><span class="who"><b>Maya Chen</b><small>Owner, 120 m away</small></span></div>
+          <div class="facts"><span class="fact"><b>Good</b><small>Condition</small></span><span class="fact"><b>23</b><small>Loans</small></span><span class="fact"><b>4.9</b><small>18 reviews</small></span></div>
+          <h2 class="h">Next 7 days</h2>
+          <div class="days"><span class="day pick"><small>Sat</small><b>19</b></span><span class="day pick"><small>Sun</small><b>20</b></span><span class="day"><small>Mon</small><b>21</b></span><span class="day out"><small>Tue</small><b>22</b></span><span class="day out"><small>Wed</small><b>23</b></span><span class="day"><small>Thu</small><b>24</b></span><span class="day"><small>Fri</small><b>25</b></span></div>
+        </div>
+        <div class="borrowbar"><span class="when"><b>Sat 19 to Sun 20 Oct</b><small>Free. No deposit.</small></span><button class="btn" data-go="3">Borrow</button></div>
+        <nav class="tabbar"><span class="tab"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>Home</span><span class="tab on"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Search</span><span class="tab" data-go="5"><svg class="i" viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8"/></svg>Borrowed</span><span class="tab"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>Messages</span><span class="tab"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Profile</span></nav>
+      </div>
+    </template>
+  </ct-step>
+
+  <ct-step id="3" name="Pick dates" new base="2">
+    <ct-hint>Click <ct-control>Request to borrow</ct-control>. To see a booked day, click <ct-control>Tue 22</ct-control>.</ct-hint>
+    <ct-new>One sheet over the tool page holds the dates, a note for the owner and the request. It replaces the separate dates screen.</ct-new>
+    <ct-question>Does the owner approve each request, or is it automatic?</ct-question>
+    <template>
+      <div class="scrim"></div>
+      <div class="sheet" role="dialog" aria-label="Borrow the drill">
+        <div class="grip"></div>
+        <h2 class="sheet-title">Borrow the drill</h2>
+        
+        <div class="days"><span class="day pick"><small>Sat</small><b>19</b></span><span class="day pick"><small>Sun</small><b>20</b></span><span class="day"><small>Mon</small><b>21</b></span><span class="day out" data-go="3b" data-control="Tue 22"><small>Tue</small><b>22</b></span><span class="day out"><small>Wed</small><b>23</b></span><span class="day"><small>Thu</small><b>24</b></span><span class="day"><small>Fri</small><b>25</b></span></div>
+        <div class="field"><label for="note">Pickup note for Maya</label><textarea id="note">I can pick it up at 9 am.</textarea></div>
+        <label class="check"><input type="checkbox" checked> Remind me the day before</label>
+        <button class="btn wide" data-go="4">Request to borrow</button>
+      </div>
+    </template>
+  </ct-step>
+
+  <ct-step id="3b" name="A booked day" branch new base="2">
+    <ct-hint>A side branch. Click <ct-control>Pick Thu 24 to Fri 25</ct-control> to go back.</ct-hint>
+    <ct-new>A booked day cannot be picked. The sheet says when the drill is free again and offers those days.</ct-new>
+    <ct-question>Should the sheet offer the waitlist here too?</ct-question>
+    <template>
+      <div class="scrim"></div>
+      <div class="sheet" role="dialog" aria-label="Borrow the drill">
+        <div class="grip"></div>
+        <h2 class="sheet-title">Borrow the drill</h2>
+        
+        <div class="days"><span class="day"><small>Sat</small><b>19</b></span><span class="day"><small>Sun</small><b>20</b></span><span class="day"><small>Mon</small><b>21</b></span><span class="day out pick"><small>Tue</small><b>22</b></span><span class="day out"><small>Wed</small><b>23</b></span><span class="day"><small>Thu</small><b>24</b></span><span class="day"><small>Fri</small><b>25</b></span></div>
+        <p class="warn">Maya lent the drill out on Tue 22 and Wed 23. It is free again on Thu 24.</p>
+        <button class="btn wide" data-go="3">Pick Thu 24 to Fri 25</button>
+      </div>
+    </template>
+  </ct-step>
+
+  <ct-step id="4" name="Request sent" new>
+    <ct-hint>Click <ct-control>See my loans</ct-control>.</ct-hint>
+    <ct-new>The request goes to Maya with the pickup note. The member sees what happens next.</ct-new>
+    <template>
+      <div class="screen">
+        <div class="status"><span>9:41</span><span class="bar"></span></div>
+        <div class="topbar"><span class="ib"></span><span class="tb-title">Request sent</span><span class="ib"></span></div>
+        <div class="scroll">
+          <div class="done"><h1>Maya has your request</h1><p>Maya usually replies within 2 hours. We will tell you when she does.</p></div>
+          <div class="card"><b>Cordless drill 18V</b><small>Sat 19 to Sun 20 Oct, pickup at 9 am</small></div>
+          <div class="stack"><button class="btn wide" data-go="5">See my loans</button><button class="btn wide ghost">Message Maya</button></div>
+        </div>
+        <div class="toast">Request sent</div>
+        <nav class="tabbar"><span class="tab"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>Home</span><span class="tab on"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Search</span><span class="tab" data-go="5"><svg class="i" viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8"/></svg>Borrowed</span><span class="tab"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>Messages</span><span class="tab"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Profile</span></nav>
+      </div>
+    </template>
+  </ct-step>
+
+  <ct-step id="5" name="Borrowed tab">
+    <ct-hint>This is the last step. Click Restart to go again.</ct-hint>
+    <ct-new>The request shows in Borrowed at once, marked as waiting, so the member does not ask twice.</ct-new>
+    <template>
+      <div class="screen">
+        <div class="status"><span>9:41</span><span class="bar"></span></div>
+        <div class="topbar"><span class="ib"></span><span class="tb-title">Borrowed</span><span class="ib"></span></div>
+        <div class="segment"><span class="on">Now</span><span>Past</span></div>
+        <div class="scroll">
+          <div class="row"><span class="thumb"></span><span class="who"><b>Cordless drill 18V</b><small>Maya Chen, Sat 19 to Sun 20 Oct</small></span><span class="badge out wait">Waiting</span></div>
+          <div class="row"><span class="thumb"></span><span class="who"><b>Step ladder, 6 ft</b><small>Tom Okafor, due Sun 20 Oct</small></span><span class="badge">Due</span></div>
+          <div class="row"><span class="thumb"></span><span class="who"><b>Tile saw</b><small>Ana Lopes, due Fri 25 Oct</small></span></div>
+        </div>
+        <nav class="tabbar"><span class="tab"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>Home</span><span class="tab"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>Search</span><span class="tab on"><svg class="i" viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8"/></svg>Borrowed</span><span class="tab"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>Messages</span><span class="tab"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Profile</span></nav>
+      </div>
+    </template>
+  </ct-step>
+</ct-flow>
+</body>
+</html>

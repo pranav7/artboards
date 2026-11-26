@@ -1,11 +1,13 @@
 ---
 name: artboard
-description: Design a feature, a flow or a screen as local HTML artboards that the user reviews on localhost, in rounds. Two modes - lo-fi journey boards (rough wireframes, user journeys, user flows) and hi-fi artboards (one screen in the product's real look). Use when the user wants to design or redesign a feature, a flow or a screen, asks for wireframes, mockups, a user journey or a user flow, wants to agree how a screen looks, or wants to review designs by reloading a localhost URL.
+description: Design a feature, a flow or a screen as local HTML artboards that the user reviews on localhost, in rounds. Three modes - lo-fi journey boards (rough wireframes, user journeys, user flows), hi-fi artboards (one screen in the product's real look), and click-throughs (a flow in the product's real look that the reviewer clicks through, built from screens captured from the running app). Use when the user wants to design or redesign a feature, a flow or a screen, asks for wireframes, mockups, a user journey, a user flow, a clickable prototype or a click-through, wants to agree how a screen looks, or wants to review designs by reloading a localhost URL.
 ---
 
 # Artboards
 
 An artboard is one HTML file. A group is one folder of artboards plus a `meta.json` file.
+Other files can go in subfolders of the group, such as captured screens in `screens/`. The
+review page lists only the HTML files at the top of the group folder.
 The `artboards` command makes groups, checks and screenshots the files, and serves every
 group at `http://localhost:8899/`. The reviewer opens the URL, reloads it after each
 round, and sends back notes or annotated screenshots.
@@ -20,14 +22,19 @@ https://github.com/pranav7/artboards. Run `artboards -h` for the commands.
   numbered regions, joined by arrows, with the user journeys in a side panel.
 - **Hi-fi.** Use it when the flow is agreed and the question is how a screen looks.
   Draw one self-contained HTML file for each screen or state, in the product's real look.
+- **Click-through.** Use it when the reviewer must click through a flow in the product's
+  real look to understand it. Capture the real screens from the running app, edit them
+  into states, and declare the steps and the moves between them.
 
 The usual path: a lo-fi board, agreed, then hi-fi artboards in the same group for the
-screens where the look matters.
+screens where the look matters. When a change goes across several screens of a product
+that people already use, a click-through often replaces the hi-fi artboards.
 
 Before you draw, read the guide for the mode. Read only that guide:
 
 - Lo-fi: [lofi.md](lofi.md)
 - Hi-fi: [hifi.md](hifi.md)
+- Click-through: [clickthrough.md](clickthrough.md)
 
 ## The loop
 

@@ -1,6 +1,7 @@
 """The artboards command line. Run `artboards -h`."""
 import argparse
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -105,7 +106,7 @@ def cmd_tidy(args):
 
 
 def cmd_guide(args):
-    path = paths.KIT_DIR / "reference.md" if args.mode == "lofi" else paths.SKILL_DIR / "hifi.md"
+    path = paths.KIT_DIR / "reference.md" if args.mode == "lofi" else paths.SKILL_DIR / f"{args.mode}.md"
     try:
         sys.stdout.write(path.read_text(encoding="utf-8"))
     except OSError:
@@ -133,9 +134,61 @@ def cmd_shot(args):
     from . import browser
 
     try:
+        if args.all_steps:
+            for out in browser.shot_steps(args.file, dark=args.dark, out_dir=args.output):
+                print(out)
+            return
         out = browser.shot(args.file, dark=args.dark, width=args.width, out=args.output)
-    except FileNotFoundError as exc:
+    except (FileNotFoundError, ValueError) as exc:
         sys.exit(str(exc))
+    print(out)
+
+
+def pair(text, sep, what):
+    """'name=value' -> ('name', 'value'). Exits with a message when sep is missing."""
+    name, found, value = text.partition(sep)
+    if not found or not name.strip():
+        sys.exit(f"{what} {text!r}: write it as name{sep}value")
+    return name.strip(), value.strip()
+
+
+def cmd_capture(args):
+    from playwright.sync_api import Error
+
+    from . import capture
+
+    m = re.fullmatch(r"(\d+)x(\d+)", args.viewport)
+    if not m:
+        sys.exit(f"viewport {args.viewport!r}: write it as WIDTHxHEIGHT, for example 1440x900")
+    if args.before and not os.path.isfile(args.before):
+        sys.exit(f"no such file: {args.before}")
+    try:
+        out, png, warnings = capture.capture(
+            args.url, args.output, selector=args.selector, viewport=(int(m[1]), int(m[2])),
+            cookies=[pair(c, "=", "cookie") for c in args.cookie],
+            headers=[pair(h, ":", "header") for h in args.header],
+            before=args.before, wait_for=args.wait_for, wait_ms=args.wait, dark=args.dark)
+    except (Error, ValueError) as exc:
+        sys.exit(f"capture failed: {str(getattr(exc, 'message', exc)).splitlines()[0]}")
+    for line in warnings:
+        print(f"warn   {line}", file=sys.stderr)
+    print(out)
+    print(png)
+
+
+def cmd_compose(args):
+    from . import compose
+
+    needed = args.snapshots + ([args.output] if args.add else [])
+    missing = [f for f in needed if not os.path.isfile(f)]
+    if missing:
+        sys.exit(f"no such file: {', '.join(missing)}")
+    try:
+        out, warnings = compose.compose(args.output, args.snapshots, title=args.title, add=args.add)
+    except (FileExistsError, ValueError) as exc:
+        sys.exit(str(exc))
+    for line in warnings:
+        print(f"warn   {line}", file=sys.stderr)
     print(out)
 
 
@@ -154,7 +207,7 @@ def cmd_export(args):
 def parser():
     p = argparse.ArgumentParser(
         prog="artboards",
-        description="Local HTML artboards for UI design reviews: lo-fi journey boards and hi-fi screens.")
+        description="Local HTML artboards for UI design reviews: lo-fi journey boards, hi-fi screens and click-throughs.")
     sub = p.add_subparsers(dest="command", metavar="<command>", required=True)
 
     s = sub.add_parser("init", help="create or resume the group for this checkout; prints its folder")
@@ -182,8 +235,8 @@ def parser():
     s.add_argument("--dry-run", action="store_true", help="print what would change, change nothing")
     s.set_defaults(func=cmd_tidy)
 
-    s = sub.add_parser("guide", help="print the lo-fi tag reference or the hi-fi guide")
-    s.add_argument("mode", nargs="?", choices=("lofi", "hifi"), default="lofi")
+    s = sub.add_parser("guide", help="print the lo-fi tag reference, or the hi-fi or click-through guide")
+    s.add_argument("mode", nargs="?", choices=("lofi", "hifi", "clickthrough"), default="lofi")
     s.set_defaults(func=cmd_guide)
 
     s = sub.add_parser("check", help="check boards for problems; exit 1 on any error")
@@ -191,11 +244,36 @@ def parser():
     s.set_defaults(func=cmd_check)
 
     s = sub.add_parser("shot", help="save a full-page PNG of a board")
-    s.add_argument("file", help="the board; add #journey=N to pin a journey")
+    s.add_argument("file", help="the board; add #journey=N to pin a journey, or #step=ID for a click-through step")
+    s.add_argument("--all-steps", action="store_true", help="click-through: one PNG for each step")
     s.add_argument("--dark", action="store_true", help="use the dark color scheme")
-    s.add_argument("--width", type=int, default=1600, help="viewport width in px (default 1600)")
-    s.add_argument("-o", "--output", help="PNG path (default: next to the board)")
+    s.add_argument("--width", type=int, default=1600,
+                   help="viewport width in px (default 1600). A click-through is shot at its own size")
+    s.add_argument("-o", "--output", help="PNG path, or the folder for --all-steps (default: next to the board)")
     s.set_defaults(func=cmd_shot)
+
+    s = sub.add_parser("capture", help="save one state of a running app as a self-contained HTML snapshot")
+    s.add_argument("url")
+    s.add_argument("-o", "--output", required=True, help="the snapshot path; a PNG of the page goes next to it")
+    s.add_argument("--selector", help="capture only this element (default: the whole body)")
+    s.add_argument("--viewport", default="1440x900", help="WIDTHxHEIGHT (default 1440x900)")
+    s.add_argument("--cookie", action="append", default=[], metavar="NAME=VALUE",
+                   help="a cookie for the page's site; repeat for more")
+    s.add_argument("--header", action="append", default=[], metavar="'NAME: VALUE'",
+                   help="a header for every request; repeat for more")
+    s.add_argument("--before", metavar="SCRIPT.py",
+                   help="a Python file run with `page` set after the page loads: sign in, click to a state")
+    s.add_argument("--wait-for", metavar="SELECTOR", help="wait until this element shows before the capture")
+    s.add_argument("--wait", type=int, default=0, metavar="MS", help="wait this long before the capture")
+    s.add_argument("--dark", action="store_true", help="use the dark color scheme")
+    s.set_defaults(func=cmd_capture)
+
+    s = sub.add_parser("compose", help="write a click-through with one step for each snapshot")
+    s.add_argument("snapshots", nargs="+", metavar="snapshot")
+    s.add_argument("-o", "--output", required=True, help="the click-through file to write")
+    s.add_argument("--title", default="Click-through", help="the title of the click-through")
+    s.add_argument("--add", action="store_true", help="append the steps to the click-through at -o")
+    s.set_defaults(func=cmd_compose)
 
     s = sub.add_parser("export", help="write one self-contained HTML file with the kit inlined")
     s.add_argument("file")
